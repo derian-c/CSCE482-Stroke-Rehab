@@ -47,3 +47,4 @@ Changes will be suggested and discussed during a team meeting
 - Derian Compean
 - Alex Mayer
 - Brandon Fornero
+- Sam Trythall

@@ -45,3 +45,4 @@ Changes will be suggested and discussed during a team meeting
 
 # Team Member Signatures
 Derian Compean
+Brandon Fornero

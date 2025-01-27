@@ -27,7 +27,7 @@ Client Liaison \- Derian Compean
 * Meet after class on Wednesday around 7  
 * Meetings will be held on Discord
 
-# 
+ 
 
 # Change Requests
 

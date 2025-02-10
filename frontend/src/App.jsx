@@ -19,7 +19,7 @@ function App() {
     <div className='App'>
       <header>
         <h1>Welcome to the vite+React frontend</h1>
-        {data ? <p>{data.message}</p> : <p>loading data...</p>}
+        {data ? <p>{data.message}</p> : <p>Loading data...</p>}
       </header>
     </div>
   )

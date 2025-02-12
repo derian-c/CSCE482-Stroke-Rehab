@@ -70,7 +70,6 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: |
-          cd backend
           unzip release.zip
 
       

@@ -71,6 +71,7 @@ jobs:
       - name: Unzip artifact for deployment
         run: |
           unzip release.zip
+          ls -a
 
       
       - name: Login to Azure

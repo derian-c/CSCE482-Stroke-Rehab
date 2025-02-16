@@ -6,9 +6,7 @@ export async function getUsersRole(user, getAccessTokenSilently) {
   const token = await getAccessTokenSilently();
 
   const response = await fetch(
-    `${import.meta.env.VITE_AUTH0_ISSUER_BASE_URL}/api/v2/users/${
-      user.sub
-    }/roles`,
+    `${import.meta.env.VITE_AUTH0_ISSUER_BASE_URL}users/${user.sub}/roles`,
     {
       method: "GET",
       headers: {

@@ -11,5 +11,5 @@ def get_data():
 
 if __name__ == '__main__':
     # This runs on port 5000 by default
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
 

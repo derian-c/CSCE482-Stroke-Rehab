@@ -1,28 +1,39 @@
-import { useEffect, useState } from 'react'
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import PatientPage from "./pages/PatientPage";
+import PhysicianPage from "./pages/PhysicianPage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/data')
-      .then((response) => {
-        if(!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then((data) => setData(data))
-      .catch((error) => console.error('Error fetching data:', error));
-  }, []);
-
   return (
-    <div className='App'>
-      <header>
-        <h1>Welcome to the vite+React frontend</h1>
-        {data ? <p>{data.message}</p> : <p>Loading data...</p>}
-      </header>
-    </div>
-  )
+    <Router>
+      <div>
+        <nav>
+          <ul>
+            <li>
+              <a href="/">LoginPage</a>
+            </li>
+            <li>
+              <a href="/patient">PatientPage</a>
+            </li>
+            <li>
+              <a href="/physician">PhysicianPage</a>
+            </li>
+            <li>
+              <a href="/admin">AdminPage</a>
+            </li>
+          </ul>
+        </nav>
+        <Routes>
+          <Route exact path="/" element={<LoginPage />} />
+          <Route path="/patient" element={<PatientPage />} />
+          <Route path="/physician" element={<PhysicianPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;

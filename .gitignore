@@ -2,6 +2,6 @@
 .env*
 
 #ignore python venv
-./backend/venv
-
+backend/venv
+backend/__pycache__
 

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from classes import Base, Patient, Physician
+from auth import requires_auth, AuthError
 
 # Create database engine and configure with app
 load_dotenv()
@@ -63,6 +64,19 @@ def create_physician():
   db.session.commit()
   return jsonify(physician.dict())
 
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
+# This needs authentication
+@app.route("/api/private")
+@requires_auth
+def private():
+    response = "Hello from a private endpoint! You need to be authenticated to see this."
+    return jsonify(message=response)
+
+
 if __name__ == '__main__':
     app.run(debug=True,port=8000)
-

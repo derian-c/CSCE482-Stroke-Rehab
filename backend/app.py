@@ -1,40 +1,66 @@
 import os
-import sqlalchemy
-from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
 from classes import Base, Patient, Physician
 
-# Create engine to communicate with db and create tables
+# Create database engine and configure with app
 load_dotenv()
+
 db_url = os.environ.get('DATABASE_URL_LOCAL')
-engine = sqlalchemy.create_engine(db_url, echo=True)
-Base.metadata.create_all(engine)
+db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+db.init_app(app)
 
+# Get list of all patients
+@app.route('/api/patients', methods=['GET'])
+def get_patients():
+  patients = db.session.execute(db.select(Patient)).scalars()
+  return jsonify([patient.dict() for patient in patients])
+
+# Get info for one patient
 @app.route('/api/patients/<int:id>', methods=['GET'])
 def get_patient(id):
-  with Session(engine) as session:
-    patient = session.get(Patient, id)
-  return jsonify(patient)
-
-@app.route('/api/patients', methods=['POST'])
-def create_patient():
-  name = request.form.get('name')
-  email_address = request.form.get('email_address')
-  patient = Patient(name=name,email_address=email_address)
-  with Session(engine) as session:
-    session.add(patient)
-    session.flush()
-    session.commit()
+  patient = db.session.get(Patient, id)
   return jsonify(patient.dict())
 
+# Create a patient with a name, email address, and physician name
+@app.route('/api/patients/create', methods=['POST'])
+def create_patient():
+  data = request.get_json()
+  name = data.get('name')
+  email_address = data.get('email_address')
+  physician_name = data.get('physician_name')
+  patient = Patient(name=name,email_address=email_address)
+  physician = db.session.execute(db.select(Physician).filter_by(name=physician_name)).scalar_one()
+  patient.physician_id = physician.id
+  db.session.add(patient)
+  db.session.commit()
+  return jsonify(patient.dict())
 
+# Get list of all physicians
+@app.route('/api/physicians', methods=['GET'])
+def get_physicians():
+  physicians = db.session.execute(db.select(Physician)).scalars()
+  return jsonify([physician.dict() for physician in physicians])
+
+# Get info for one physician
 @app.route('/api/physicians/<int:id>', methods=['GET'])
 def get_physician(id):
-  with Session(engine) as session:
-    physician = session.get(Physician, id)
+  physician = db.session.get(Physician, id)
+  return jsonify(physician.dict())
+
+# Create a physician with a name and email address
+@app.route('/api/physicians/create', methods=['POST'])
+def create_physician():
+  data = request.get_json()
+  name = data.get('name')
+  email_address = data.get('email_address')
+  physician = Physician(name=name,email_address=email_address)
+  db.session.add(physician)
+  db.session.commit()
   return jsonify(physician.dict())
 
 if __name__ == '__main__':

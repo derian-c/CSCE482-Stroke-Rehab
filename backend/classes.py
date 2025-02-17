@@ -22,7 +22,7 @@ class Patient(Base):
     return f'Patient(id={self.id!r}, email_address={self.email_address!r})'
   
   def dict(self):
-    return {'id': self.id,'name': self.name,'email_address': self.email_address}
+    return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 class Physician(Base):
@@ -38,4 +38,4 @@ class Physician(Base):
     return f'Physician(id={self.id!r}, email_address={self.email_address!r})'
 
   def dict(self):
-    return {'id': self.id,'name': self.name,'email_address': self.email_address}
+    return {c.name: getattr(self, c.name) for c in self.__table__.columns}

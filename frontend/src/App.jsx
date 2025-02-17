@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const App = () => {
   const [data, setData] = useState(null);
+  const { loginWithRedirect, logout, user, isAuthenticated, isLoading } =
+    useAuth0();
 
   useEffect(() => {
     fetch("/api/data")
@@ -39,10 +42,23 @@ const App = () => {
               <p className="text-gray-500">Loading data...</p>
             )}
 
-            <button className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center space-x-2">
-              <span className="text-xl">🔒</span>
-              <span>Login</span>
-            </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => loginWithRedirect()}
+                className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <span className="text-xl">🔒</span>
+                <span>Login</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => logout({ returnTo: window.location.origin })}
+                className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <span className="text-xl">🔒</span>
+                <span>Logout</span>
+              </button>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">

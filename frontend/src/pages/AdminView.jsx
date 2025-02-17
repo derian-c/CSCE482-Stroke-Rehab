@@ -1,12 +1,11 @@
 import React from "react";
 import { isAdmin } from "../apis/isAdmin";
 import { getUsersRole } from "../apis/getUserRole";
-import LoginPage from "./LoginPage";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 
-function AdminPage() {
+function AdminView() {
   const { user, isAuthenticated, getAccessTokenSilently, isLoading } =
     useAuth0();
   const [canEnter, setCanEnter] = useState(false);
@@ -45,4 +44,4 @@ function AdminPage() {
   );
 }
 
-export default AdminPage;
+export default AdminView;

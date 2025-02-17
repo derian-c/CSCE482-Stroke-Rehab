@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import { getPatients } from '../apis/patientService'
 const PhysicianView = () => {
-  const [patients] = useState([
+  const [patients, setPatients] = useState([
     { 
-      id: 1, 
-      name: 'John Doe', 
+      id: 0, 
+      name: '', 
       age: 76,
       lastSession: '2025-02-15',
       exerciseQuality: {
@@ -15,8 +15,8 @@ const PhysicianView = () => {
       }
     },
     { 
-      id: 2, 
-      name: 'Jane Doe', 
+      id: 1, 
+      name: '', 
       age: 81,
       lastSession: '2025-02-14',
       exerciseQuality: {
@@ -36,13 +36,29 @@ const PhysicianView = () => {
     setSelectedPatient(patient);
     setShowDetail(true);
   };
-
+  
   const handleSendMessage = () => {
     if (message.trim()) {
       setMessage('');
       alert(`Message sent to ${selectedPatient.name}`);
     }
   };
+  
+  useEffect(() => {
+    async function loadPatients(){
+      const _patients = await getPatients();
+      console.log(_patients)
+      for(let i = 0; i < 2; i++){
+        let patientsCopy = patients
+        patientsCopy[i].id = _patients[i].id
+        patientsCopy[i].name = _patients[i].name
+        setPatients(patientsCopy)
+      }
+      console.log(_patients)
+    }
+
+    loadPatients()
+  },[])
 
   return (
     <div className="flex h-screen bg-gray-100">

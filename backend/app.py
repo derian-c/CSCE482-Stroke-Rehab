@@ -2,18 +2,21 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from classes import Base, Patient, Physician
 from auth import requires_auth, AuthError
 
 # Create database engine and configure with app
 load_dotenv()
 
-db_url = os.environ.get('DATABASE_URL_LOCAL')
+db_url = os.environ.get('DATABASE_URL')
+frontend_url = os.environ.get('FRONTEND_URL')
 db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 db.init_app(app)
+CORS(app,resources={r'/api/*': {'origins': frontend_url}})
 
 # Get list of all patients
 @app.route('/api/patients', methods=['GET'])

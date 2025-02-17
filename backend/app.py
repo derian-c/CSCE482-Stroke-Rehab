@@ -18,6 +18,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 db.init_app(app)
 CORS(app,resources={r'/api/*': {'origins': frontend_url}})
 
+with app.app_context():
+    db.create_all()
+
 # Get list of all patients
 @app.route('/api/patients', methods=['GET'])
 def get_patients():

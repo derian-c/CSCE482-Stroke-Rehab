@@ -2,21 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 const App = () => {
-  const [data, setData] = useState(null);
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } =
     useAuth0();
-
-  useEffect(() => {
-    fetch("/api/data")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-      .then((data) => setData(data))
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-r from-purple-50 to-blue-50 flex items-center justify-center">
@@ -36,12 +23,6 @@ const App = () => {
           </div>
 
           <div className="space-y-4">
-            {data ? (
-              <p className="text-gray-700">{data.message}</p>
-            ) : (
-              <p className="text-gray-500">Loading data...</p>
-            )}
-
             {!isAuthenticated ? (
               <button
                 onClick={() => loginWithRedirect()}

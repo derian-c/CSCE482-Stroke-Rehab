@@ -39,7 +39,7 @@ function AdminView() {
 
   return (
     <div>
-      <h1>Welcome to the Admin Page!</h1>
+      <h1>Welcome to the Admin Page {user.name}!</h1>
     </div>
   );
 }

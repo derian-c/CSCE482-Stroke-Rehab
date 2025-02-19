@@ -13,6 +13,7 @@ on:
       - main
     paths:
       - 'frontend/**'
+  workflow_dispatch:
 
 jobs:
   build_and_deploy_job:
@@ -37,7 +38,7 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
         env:
-          VITE_AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT }}
+          VITE_AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
           VITE_AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
           VITE_AUTH0_ISSUER_BASE_URL: ${{ secrets.AUTH0_ISSUER_BASE_URL }}
           VITE_AUTH0_SECRET: ${{ secrets.AUTH0_SECRET }}

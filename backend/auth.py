@@ -1,12 +1,16 @@
 import json
+import os
 from urllib.request import urlopen
 from functools import wraps
 
 from flask import request, g
 from jose import jwt,exceptions
+from dotenv import load_dotenv
 
-AUTH0_DOMAIN = 'dev-v0u4o355fr4pbhfd.us.auth0.com'
-API_AUDIENCE = 'https://test.api'
+load_dotenv()
+
+AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN')
+API_AUDIENCE = os.environ.get('API_AUDIENCE')
 ALGORITHMS = ["RS256"]
 
 # Error handler
@@ -42,6 +46,7 @@ def get_token_auth_header():
                             " Bearer token"}, 401)
 
     token = parts[1]
+    print(token)
     return token
 
 def requires_auth(f):

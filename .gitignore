@@ -1,7 +1,9 @@
 # Ignore all environment files
 .env*
+__pycache__*
 
 #ignore python venv
 backend/venv
-backend/__pycache__
 
+#ignore seed file
+backend/seed.py

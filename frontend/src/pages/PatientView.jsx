@@ -48,7 +48,6 @@ const PatientView = () => {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Progress Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -66,7 +65,6 @@ const PatientView = () => {
           </p>
         </div>
 
-        {/* Milestones Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -96,7 +94,6 @@ const PatientView = () => {
         </div>
       </div>
 
-      {/* Inbox Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Inbox</h2>
@@ -133,7 +130,6 @@ const PatientView = () => {
         </div>
       </div>
 
-      {/* Quick Access Buttons */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <button className="h-24 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col items-center justify-center gap-2 text-gray-900">
           <span className="text-2xl">📋</span>

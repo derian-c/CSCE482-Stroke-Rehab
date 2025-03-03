@@ -22,3 +22,11 @@ def test_patient_update(populate_database,app):
     db.session.commit()
     assert not (patient in db.session.dirty)
     assert patient.name == 'New Name'
+  
+def test_patient_delete(populate_database,app):
+  with app.app_context():
+    patient = db.session.get(Patient, 1)
+    db.session.delete(patient)
+    db.session.commit()
+    assert not (patient in db.session)
+    assert db.session.get(Patient, 1) == None

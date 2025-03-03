@@ -32,6 +32,7 @@ const PhysicianView = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [message, setMessage] = useState("");
   const [showDetail, setShowDetail] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
@@ -48,14 +49,13 @@ const PhysicianView = () => {
   useEffect(() => {
     async function loadPatients() {
       const _patients = await getPatients();
-      console.log(_patients);
       for (let i = 0; i < 2; i++) {
         let patientsCopy = patients;
         patientsCopy[i].id = _patients[i].id;
         patientsCopy[i].name = _patients[i].name;
         setPatients(patientsCopy);
       }
-      console.log(_patients);
+      setIsLoading(false);
     }
 
     loadPatients();
@@ -78,7 +78,7 @@ const PhysicianView = () => {
                   : "text-gray-700 hover:text-gray-900"
               }`}
             >
-              <div className="font-medium">{patient.name}</div>
+              <div className="font-medium">{isLoading? 'Loading...': patient.name}</div>
               <div className="text-sm text-gray-500">
                 Last session: {patient.lastSession}
               </div>

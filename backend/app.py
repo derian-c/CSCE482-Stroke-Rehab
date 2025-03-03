@@ -15,7 +15,7 @@ frontend_url = os.environ.get('FRONTEND_URL')
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
-CORS(app,resources={r'/api/*': {'origins': frontend_url}})
+CORS(app,resources={r'/*': {'origins': frontend_url}})
 db.init_app(app)
 migrate = Migrate(app,db)
 

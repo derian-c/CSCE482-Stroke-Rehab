@@ -105,7 +105,6 @@ const PhysicianView = () => {
                 <div className="bg-gray-100 rounded-lg h-96">
                   <PatientModel />
                   <p className="text-gray-500">
-                    Wireframe model will be placed here
                   </p>
                 </div>
               </div>

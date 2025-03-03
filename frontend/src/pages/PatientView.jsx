@@ -42,7 +42,7 @@ const PatientView = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 text-gray-900">
+    <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
       <h1 className="text-3xl font-bold mb-8 text-gray-900">
         Patient Dashboard
       </h1>

@@ -74,11 +74,11 @@ const PatientModel = () => {
     //Load model (Note: Models must be in public folder)
     const loader = new GLTFLoader().setPath("/Models");
     loader.load(
-      "/RemyV2/RemyV2.gltf",
+      "/RajagopalLaiUhlrich2023.gltf",
       (gltf) => {
         console.log("loading model");
         const mesh = gltf.scene;
-
+        mesh.scale.set(3, 3, 3);
         //Some models are broken into multiple meshes
         //This casts the shadow for each mesh part
         mesh.traverse((child) => {
@@ -89,7 +89,7 @@ const PatientModel = () => {
         });
 
         //Translates entire models initial position
-        mesh.position.set(0, 0, -1);
+        mesh.position.set(0, 0, 0);
         scene.add(mesh);
       },
       (error) => {

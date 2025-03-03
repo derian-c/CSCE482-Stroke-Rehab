@@ -31,7 +31,7 @@ I think our team is working well together.
 
 ### **What new ideas did you have or skills did you develop this week?**
 
-I learned how to create a model and a 3d scene in three js, as well as how to convert our opensim models into a more open file type like gltf.
+I learned how to create a model and a 3d scene in three js, as well as how to convert our opensim models into a more open file type like .gltf .
 
 ### **Who was your most awesome team member this week and why?**
 

@@ -6,6 +6,7 @@ import PatientView from './pages/PatientView'
 import AdminView from './pages/AdminView'
 import PhysicianView from './pages/PhysicianView'
 import ProtectedRoute from './components/ProtectedRoute'
+import ProviderView from './pages/ProviderView'
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PhysicianView />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/provider"
+        element={
+          <ProtectedRoute>
+            <ProviderView />
           </ProtectedRoute>
         }
       />

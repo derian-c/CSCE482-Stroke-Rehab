@@ -57,10 +57,10 @@ const ProviderView = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
       <div className="bg-blue-600 text-white shadow-md">
         <div className="container mx-auto py-4 px-6">
-          <h1 className="text-xl font-bold">Provider Portal</h1>
+          <h1 className="text-xl font-bold">Provider Dashboard</h1>
         </div>
       </div>
 

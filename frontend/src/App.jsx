@@ -12,7 +12,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      {/* The profile route is protected */}
+      {/* The profile route is protected :) */}
       <Route 
         path="/admin"
         element={

@@ -10,20 +10,20 @@ const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
 const audience = import.meta.env.VITE_API_AUDIENCE;
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  //<StrictMode>
-  <Auth0Provider
-    domain={domain}
-    clientId={clientId}
-    authorizationParams={{
-      audience: audience,
-      redirect_uri: window.location.origin,
-    }}
-    useRefreshTokens={true}
-    cacheLocation="localstorage"
-  >
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </Auth0Provider>
-  //</StrictMode>
+  <StrictMode>
+    <Auth0Provider
+      domain={domain}
+      clientId={clientId}
+      authorizationParams={{
+        audience: audience,
+        redirect_uri: window.location.origin,
+      }}
+      useRefreshTokens={true}
+      cacheLocation="localstorage"
+    >
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Auth0Provider>
+  </StrictMode>
 );

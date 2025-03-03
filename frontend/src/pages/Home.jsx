@@ -1,9 +1,8 @@
-import React from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import React from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const Home = () => {
-  const { loginWithRedirect, logout, isAuthenticated } =
-    useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated } = useAuth0();
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-r from-purple-50 to-blue-50 flex items-center justify-center">
@@ -33,7 +32,9 @@ const Home = () => {
               </button>
             ) : (
               <button
-                onClick={() => logout({ returnTo: window.location.origin })}
+                onClick={() =>
+                  logout({ logoutParams: { returnTo: window.location.origin } })
+                }
                 className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center space-x-2"
               >
                 <span className="text-xl">🔒</span>

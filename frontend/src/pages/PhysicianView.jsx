@@ -1,64 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { getPatients } from '../apis/patientService'
+import React, { useState, useEffect } from "react";
+import { getPatients } from "../apis/patientService";
+import PatientModel from "../graphics/render";
 const PhysicianView = () => {
   const [patients, setPatients] = useState([
-    { 
-      id: 0, 
-      name: '', 
+    {
+      id: 0,
+      name: "",
       age: 76,
-      lastSession: '2025-02-15',
+      lastSession: "2025-02-15",
       exerciseQuality: {
-        shoulder: 'Good range of motion, slight tension',
-        elbow: 'Limited extension',
-        wrist: 'Improved flexibility',
-        knee: 'Normal range of motion'
-      }
+        shoulder: "Good range of motion, slight tension",
+        elbow: "Limited extension",
+        wrist: "Improved flexibility",
+        knee: "Normal range of motion",
+      },
     },
-    { 
-      id: 1, 
-      name: '', 
+    {
+      id: 1,
+      name: "",
       age: 81,
-      lastSession: '2025-02-14',
+      lastSession: "2025-02-14",
       exerciseQuality: {
-        shoulder: 'Restricted movement',
-        elbow: 'Good progress',
-        wrist: 'Needs attention',
-        knee: 'Strong improvement'
-      }
+        shoulder: "Restricted movement",
+        elbow: "Good progress",
+        wrist: "Needs attention",
+        knee: "Strong improvement",
+      },
     },
   ]);
 
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [showDetail, setShowDetail] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
     setShowDetail(true);
   };
-  
+
   const handleSendMessage = () => {
     if (message.trim()) {
-      setMessage('');
+      setMessage("");
       alert(`Message sent to ${selectedPatient.name}`);
     }
   };
-  
+
   useEffect(() => {
-    async function loadPatients(){
+    async function loadPatients() {
       const _patients = await getPatients();
-      console.log(_patients)
-      for(let i = 0; i < 2; i++){
-        let patientsCopy = patients
-        patientsCopy[i].id = _patients[i].id
-        patientsCopy[i].name = _patients[i].name
-        setPatients(patientsCopy)
+      for (let i = 0; i < 2; i++) {
+        let patientsCopy = patients;
+        patientsCopy[i].id = _patients[i].id;
+        patientsCopy[i].name = _patients[i].name;
+        setPatients(patientsCopy);
       }
-      console.log(_patients)
+      setIsLoading(false);
     }
 
-    loadPatients()
-  },[])
+    loadPatients();
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -67,18 +68,20 @@ const PhysicianView = () => {
           <h2 className="text-xl font-bold text-gray-900">Patients</h2>
         </div>
         <div className="divide-y">
-          {patients.map(patient => (
+          {patients.map((patient) => (
             <button
               key={patient.id}
               onClick={() => handlePatientClick(patient)}
               className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                selectedPatient?.id === patient.id 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-gray-700 hover:text-gray-900'
+                selectedPatient?.id === patient.id
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
-              <div className="font-medium">{patient.name}</div>
-              <div className="text-sm text-gray-500">Last session: {patient.lastSession}</div>
+              <div className="font-medium">{isLoading? 'Loading...': patient.name}</div>
+              <div className="text-sm text-gray-500">
+                Last session: {patient.lastSession}
+              </div>
             </button>
           ))}
         </div>
@@ -88,35 +91,47 @@ const PhysicianView = () => {
         {showDetail && selectedPatient ? (
           <div className="p-6 space-y-6">
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-2xl font-bold text-gray-900">{selectedPatient.name}</h2>
-              <p className="text-gray-600">
-                Age: {selectedPatient.age}
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {selectedPatient.name}
+              </h2>
+              <p className="text-gray-600">Age: {selectedPatient.age}</p>
             </div>
 
             <div className="grid grid-cols-3 gap-6">
               <div className="col-span-2 bg-white rounded-lg shadow-md p-4">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Patient Model</h3>
-                <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-                  <p className="text-gray-500">Wireframe model will be placed here</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Patient Model
+                </h3>
+                <div className="bg-gray-100 rounded-lg h-96">
+                  <PatientModel />
+                  <p className="text-gray-500">
+                  </p>
                 </div>
               </div>
 
               <div className="bg-white rounded-lg shadow-md p-4">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Joint Analysis</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Joint Analysis
+                </h3>
                 <div className="space-y-4">
-                  {Object.entries(selectedPatient.exerciseQuality).map(([joint, quality]) => (
-                    <div key={joint} className="border-b pb-2">
-                      <div className="font-medium text-gray-900 capitalize">{joint}</div>
-                      <div className="text-sm text-gray-600">{quality}</div>
-                    </div>
-                  ))}
+                  {Object.entries(selectedPatient.exerciseQuality).map(
+                    ([joint, quality]) => (
+                      <div key={joint} className="border-b pb-2">
+                        <div className="font-medium text-gray-900 capitalize">
+                          {joint}
+                        </div>
+                        <div className="text-sm text-gray-600">{quality}</div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Message Patient</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                Message Patient
+              </h3>
               <div className="space-y-4">
                 <textarea
                   value={message}
@@ -128,7 +143,7 @@ const PhysicianView = () => {
                     bg-white
                     border-gray-300
                     font-medium"
-                  style={{ fontSize: '16px' }}
+                  style={{ fontSize: "16px" }}
                 />
                 <button
                   onClick={handleSendMessage}

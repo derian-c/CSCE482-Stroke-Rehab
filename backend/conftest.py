@@ -9,8 +9,6 @@ from models.physician import Physician
 @pytest.fixture(scope='module')
 def app():
   app = create_app()
-  if not app.config['SQLALCHEMY_DATABASE_URI']:
-    raise ValueError("The TEST_DATABASE_URL environment variable is not set.")
 
   with app.app_context():
     db.create_all()

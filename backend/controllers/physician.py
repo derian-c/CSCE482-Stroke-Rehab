@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from extensions import db
 from models.physician import Physician
 
@@ -45,11 +45,11 @@ def create_physician():
   return jsonify(physician.dict())
 
 # Delete physician by id
-@physicians.route('/<int:id>/delete', methods=['DELETE'])
+@physicians.route('/<int:id>', methods=['DELETE'])
 def delete_physician(id):
   physician = db.session.get(Physician, id)
-  if physician
+  if physician:
     db.session.delete(physician)
     db.session.commit()
-  else:
-    return jsonify({'error': 'Physician does not exist'}), 422
+    return jsonify({'message': 'Physician deleted successfully'})
+  return jsonify({'error': 'Physician does not exist'}), 422

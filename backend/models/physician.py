@@ -11,7 +11,7 @@ class Physician(Base):
   id: Mapped[int] = mapped_column(primary_key=True)
   name: Mapped[str]
   email_address: Mapped[str]
-  patients: Mapped[List['Patient']] = relationship(back_populates='physician')
+  patients: Mapped[List['Patient']] = relationship(back_populates='physician',cascade='all, delete')
 
 
   def __repr__(self) -> str:

@@ -1,18 +1,20 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from extensions import db
 from models.patient import Patient
 from models.physician import Physician
 from auth import requires_auth, AuthError
+from talisman import Talisman
 
 load_dotenv()
 db_url = os.environ.get('DATABASE_URL')
 frontend_url = os.environ.get('FRONTEND_URL')
 
 app = Flask(__name__)
+Talisman(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
 CORS(app,resources={r'/*': {'origins': frontend_url}})

@@ -5,8 +5,11 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const PatientModel = () => {
   const containerReference = useRef(null);
+  const isRendered = useRef(false);
 
   useEffect(() => {
+    if(isRendered.current) return;
+    isRendered.current = true;
     //Create a New Scene to render
     const scene = new THREE.Scene();
 

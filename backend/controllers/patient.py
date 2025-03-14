@@ -59,5 +59,4 @@ def delete_patient(id):
     db.session.delete(patient)
     db.session.commit()
     return jsonify({'message': 'Patient deleted successfully'})
-  else:
-    return jsonify({'error': 'Patient does not exist'}), 422
+  return jsonify({'error': 'Patient does not exist'}), 422

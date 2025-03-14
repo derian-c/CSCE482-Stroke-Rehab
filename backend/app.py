@@ -16,6 +16,7 @@ frontend_url = os.environ.get('FRONTEND_URL')
 app = Flask(__name__)
 Talisman(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.url_map.strict_slashes = False
 
 CORS(app,resources={r'/*': {'origins': frontend_url}})
 db.init_app(app)

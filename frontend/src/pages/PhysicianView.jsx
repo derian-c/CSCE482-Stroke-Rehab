@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getPatients } from "../apis/patientService";
-import PatientModel from "../graphics/render";
+import { getPatients, createPatient } from "@/apis/patientService";
+import PatientModel from "@/graphics/render";
 const PhysicianView = () => {
   const [patients, setPatients] = useState([
     {
@@ -48,12 +48,17 @@ const PhysicianView = () => {
 
   useEffect(() => {
     async function loadPatients() {
-      const _patients = await getPatients();
-      for (let i = 0; i < 2; i++) {
-        let patientsCopy = patients;
-        patientsCopy[i].id = _patients[i].id;
-        patientsCopy[i].name = _patients[i].name;
-        setPatients(patientsCopy);
+      const response = await getPatients()
+      if(response.ok){
+        const _patients = await response.json()
+        for (let i = 0; i < 2; i++) {
+          let patientsCopy = patients
+          patientsCopy[i].id = _patients[i].id
+          patientsCopy[i].name = _patients[i].name
+          setPatients(patientsCopy)
+        }
+      }else{
+        console.error("Fetching patients failed")
       }
       setIsLoading(false);
     }

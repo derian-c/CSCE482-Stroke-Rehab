@@ -45,7 +45,7 @@ def create_patient():
   patient = db.session.scalars(db.select(Patient).filter_by(first_name=first_name,last_name=last_name,email_address=email_address)).first()
   if patient:
     return jsonify({'error': 'Patient already exists'}), 422
-  patient = Patient(first_name=name,last_name=last_name,email_address=email_address)
+  patient = Patient(first_name=first_name,last_name=last_name,email_address=email_address)
   physician = db.session.scalars(db.select(Physician).filter_by(first_name=physician_first_name,last_name=physician_last_name)).first()
   if not physician:
     return jsonify({'error': 'Physician does not exist'}), 422

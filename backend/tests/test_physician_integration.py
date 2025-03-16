@@ -17,20 +17,24 @@ def test_physician_get_empty(client):
 def test_physician_get_not_empty(client,populate_database):
   response = client.get('/physicians/1')
   assert response.status_code == 200
-  assert response.json['name'] == 'Test Physician'
+  assert response.json['first_name'] == 'Test'
+  assert response.json['last_name'] == 'Physician'
 
 def test_physician_create_valid(client):
   data = {
-    'name': 'Test Physician',
+    'first_name': 'Test',
+    'last_name': 'Physician',
     'email_address': 'test@test.com',
   }
   response = client.post('/physicians/', json=data)
   assert response.status_code == 200
-  assert response.json['name'] == 'Test Physician'
+  assert response.json['first_name'] == 'Test'
+  assert response.json['last_name'] == 'Physician'
 
 def test_physician_create_duplicate(client,populate_database):
   data = {
-    'name': 'Test Physician',
+    'first_name': 'Test',
+    'last_name': 'Physician',
     'email_address': 'test@test.com',
   }
   response = client.post('/physicians/', json=data)
@@ -39,7 +43,8 @@ def test_physician_create_duplicate(client,populate_database):
 
 def test_physician_update_valid(client,populate_database):
   data = {
-    'name': 'Test Physician',
+    'first_name': 'Test',
+    'last_name': 'Physician',
     'email_address': 'new@test.com',
   }
   response = client.put('/physicians/1', json=data)
@@ -48,7 +53,8 @@ def test_physician_update_valid(client,populate_database):
 
 def test_physician_update_invalid(client):
   data = {
-    'name': 'Test Physician',
+    'first_name': 'Test',
+    'last_name': 'Physician',
     'email_address': 'new@test.com',
   }
   response = client.put('/physicians/1', json=data)

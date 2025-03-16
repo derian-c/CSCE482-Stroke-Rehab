@@ -40,7 +40,7 @@ def create_admin():
   email_address = data.get('email_address')
   admin = db.session.scalars(db.select(Admin).filter_by(first_name=first_name,last_name=last_name,email_address=email_address)).first()
   if admin:
-    return jsonify({'error': 'admin already exists'}), 422
+    return jsonify({'error': 'Admin already exists'}), 422
   admin = Admin(first_name=first_name,last_name=last_name,email_address=email_address)
   db.session.add(admin)
   db.session.commit()

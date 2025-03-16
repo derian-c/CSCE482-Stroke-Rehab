@@ -15,5 +15,9 @@ def create_app():
 
   from controllers.physician import physicians
   app.register_blueprint(physicians)
+
+  from controllers.admin import admins
+  app.register_blueprint(admins)
+
   db.init_app(app)
   return app

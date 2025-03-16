@@ -25,7 +25,8 @@ def update_patient(id):
   patient = db.session.get(Patient, id)
   if patient:
     data = request.get_json()
-    patient.name = data.get('name')
+    patient.first_name = data.get('first_name')
+    patient.last_name = data.get('last_name')
     patient.email_address = data.get('email_address')
     patient.physician_id = data.get('physician_id')
     db.session.commit()
@@ -36,14 +37,16 @@ def update_patient(id):
 @patients.route('/', methods=['POST'])
 def create_patient():
   data = request.get_json()
-  name = data.get('name')
+  first_name = data.get('first_name')
+  last_name = data.get('last_name')
   email_address = data.get('email_address')
-  physician_name = data.get('physician_name')
-  patient = db.session.scalars(db.select(Patient).filter_by(name=name,email_address=email_address)).first()
+  physician_first_name = data.get('physician_first_name')
+  physician_last_name = data.get('physician_last_name')
+  patient = db.session.scalars(db.select(Patient).filter_by(first_name=first_name,last_name=last_name,email_address=email_address)).first()
   if patient:
     return jsonify({'error': 'Patient already exists'}), 422
-  patient = Patient(name=name,email_address=email_address)
-  physician = db.session.scalars(db.select(Physician).filter_by(name=physician_name)).first()
+  patient = Patient(first_name=name,last_name=last_name,email_address=email_address)
+  physician = db.session.scalars(db.select(Physician).filter_by(first_name=physician_first_name,last_name=physician_last_name)).first()
   if not physician:
     return jsonify({'error': 'Physician does not exist'}), 422
   patient.physician_id = physician.id

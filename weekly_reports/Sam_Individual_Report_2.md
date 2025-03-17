@@ -33,6 +33,7 @@ I think our team is working well together.
 
 I learned how to create a model and a 3d scene in three js, as well as how to convert our opensim models into a more open file type like .gltf .
 
+
 ### **Who was your most awesome team member this week and why?**
 
 I think I was the most awesome team member because rendering a skeleton on the website is cooler than having a working testing suite.

@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from extensions import db
 from models.patient import Patient
 from models.physician import Physician
+from models.admin import Admin
 from auth import requires_auth, AuthError
 from talisman import Talisman
 
@@ -27,6 +28,9 @@ app.register_blueprint(patients)
 
 from controllers.physician import physicians
 app.register_blueprint(physicians)
+
+from controllers.admin import admins
+app.register_blueprint(admins)
 
 @app.errorhandler(AuthError)
 def handle_auth_error(ex):

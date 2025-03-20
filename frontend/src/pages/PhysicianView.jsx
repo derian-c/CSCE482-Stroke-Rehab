@@ -54,11 +54,11 @@ const PhysicianView = () => {
         for (let i = 0; i < 2; i++) {
           let patientsCopy = patients
           patientsCopy[i].id = _patients[i].id
-          patientsCopy[i].name = _patients[i].name
+          patientsCopy[i].name = _patients[i].first_name+' '+_patients[i].last_name
           setPatients(patientsCopy)
         }
       }else{
-        console.error("Fetching patients failed")
+        console.error("Failed to fetch patients")
       }
       setIsLoading(false);
     }

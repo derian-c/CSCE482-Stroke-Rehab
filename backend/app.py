@@ -7,6 +7,8 @@ from extensions import db
 from models.patient import Patient
 from models.physician import Physician
 from models.admin import Admin
+from models.chat import Chat
+from models.chat_message import ChatMessage
 from auth import requires_auth, AuthError
 from talisman import Talisman
 

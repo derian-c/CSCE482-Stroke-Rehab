@@ -5,7 +5,6 @@ def test_physicians_get_empty(client):
 
 def test_physicians_get_not_empty(client,populate_database):
   response = client.get('/physicians/')
-  print(response)
   assert response.status_code == 200
   assert response.json != []
 

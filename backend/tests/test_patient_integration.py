@@ -5,7 +5,6 @@ def test_patients_get_empty(client):
 
 def test_patients_get_not_empty(client,populate_database):
   response = client.get('/patients/')
-  print(response)
   assert response.status_code == 200
   assert response.json != []
 

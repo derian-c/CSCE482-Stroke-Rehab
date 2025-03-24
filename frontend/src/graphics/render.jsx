@@ -9,7 +9,6 @@ const PatientModel = () => {
   useEffect(() => {
     //Create a New Scene to render
     const scene = new THREE.Scene();
-
     //Create Camera to establish pov
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -73,6 +72,8 @@ const PatientModel = () => {
 
     //Load model (Note: Models must be in public folder)
     const loader = new GLTFLoader().setPath("/Models");
+    //RajagopalLaiUhlrich2023.gltf
+    ///gait2354_simbody.gltf
     loader.load(
       "/RajagopalLaiUhlrich2023.gltf",
       (gltf) => {
@@ -91,6 +92,15 @@ const PatientModel = () => {
         //Translates entire models initial position
         mesh.position.set(0, 0, 0);
         scene.add(mesh);
+
+        // loader.load("/gait_animation.gltf", (animGltf) => {
+        //   const animations = animGltf.animations;
+        //   mixer = new THREE.AnimationMixer(mesh);
+
+        //   animations.forEach((clip) => {
+        //     mixer.clipAction(clip).play();
+        //   });
+        // });
       },
       (error) => {
         console.error(error);

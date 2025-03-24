@@ -13,6 +13,7 @@ class Physician(Base):
   last_name: Mapped[str]
   email_address: Mapped[str]
   patients: Mapped[List['Patient']] = relationship(back_populates='physician',cascade='all, delete')
+  chat: Mapped['Chat'] = relationship(back_populates='physician',cascade='all, delete',uselist=False)
 
 
   def __repr__(self) -> str:

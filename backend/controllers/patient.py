@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from extensions import db
 from models.physician import Physician
 from models.patient import Patient
+from models.chat import Chat
+from models.chat_message import ChatMessage
 
 patients = Blueprint('patients', __name__, url_prefix='/patients')
 
@@ -51,6 +53,8 @@ def create_patient():
     return jsonify({'error': 'Physician does not exist'}), 422
   patient.physician_id = physician.id
   db.session.add(patient)
+  chat = Chat(patient_id=patient.id,physician_id=physician.id)
+  db.add(chat)
   db.session.commit()
   return jsonify(patient.dict())
 

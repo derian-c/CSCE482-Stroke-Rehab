@@ -24,3 +24,4 @@ Flask-Migrate==4.1.0
 pytest==8.3.5
 talisman==0.1.0
 pytest-cov==6.0.0
+Flask-SocketIO==5.5.1

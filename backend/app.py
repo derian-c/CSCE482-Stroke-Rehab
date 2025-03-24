@@ -3,10 +3,13 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_socketio import SocketIO, join_room, leave_room
 from extensions import db
 from models.patient import Patient
 from models.physician import Physician
 from models.admin import Admin
+from models.chat import Chat
+from models.chat_message import ChatMessage
 from auth import requires_auth, AuthError
 from talisman import Talisman
 
@@ -32,6 +35,38 @@ app.register_blueprint(physicians)
 from controllers.admin import admins
 app.register_blueprint(admins)
 
+from controllers.chat_message import chat_messages
+app.register_blueprint(chat_messages)
+
+sock = SocketIO(app)
+
+@sock.on('join')
+def on_join(data):
+  patient_id = data['patient_id']
+  physician_id = data['physician_id']
+  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
+  join_room(chat_id)
+
+@sock.on('leave')
+def on_leave(data):
+  patient_id = data['patient_id']
+  physician_id = data['physician_id']
+  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
+  leave_room(chat_id)
+
+@sock.on('message')
+def on_message(data):
+  patient_id = data['patient_id']
+  physician_id = data['physician_id']
+  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
+  content = data['content']
+  sender = data['sender']
+  chat_message = ChatMessage(chat_id=chat_id,sender=sender,content=content)
+  db.session.add(chat_message)
+  db.session.commit()
+  sock.send(data,to=chat_id,include_self=False)
+
+
 @app.errorhandler(AuthError)
 def handle_auth_error(ex):
   response = jsonify(ex.error)
@@ -47,4 +82,4 @@ def private():
 
 
 if __name__ == '__main__':
-  app.run(debug=True,port=8000)
+  sock.run(app,debug=True)

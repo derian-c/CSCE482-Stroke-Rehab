@@ -53,8 +53,9 @@ def create_patient():
     return jsonify({'error': 'Physician does not exist'}), 422
   patient.physician_id = physician.id
   db.session.add(patient)
+  db.session.commit()
   chat = Chat(patient_id=patient.id,physician_id=physician.id)
-  db.add(chat)
+  db.session.add(chat)
   db.session.commit()
   return jsonify(patient.dict())
 

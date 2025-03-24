@@ -18,13 +18,14 @@ def get_physician(id):
     return jsonify(physician.dict())
   return jsonify({'error': 'Physician does not exist'}), 422
 
-# Update info for one patient by id
+# Update info for one physician by id
 @physicians.route('/<int:id>', methods=['PUT'])
 def update_patient(id):
   physician = db.session.get(Physician, id)
   if physician:
     data = request.get_json()
-    physician.name = data.get('name')
+    physician.first_name = data.get('first_name')
+    physician.last_name = data.get('last_name')
     physician.email_address = data.get('email_address')
     db.session.commit()
     return jsonify(physician.dict())
@@ -34,12 +35,13 @@ def update_patient(id):
 @physicians.route('/', methods=['POST'])
 def create_physician():
   data = request.get_json()
-  name = data.get('name')
+  first_name = data.get('first_name')
+  last_name = data.get('last_name')
   email_address = data.get('email_address')
-  physician = db.session.scalars(db.select(Physician).filter_by(name=name,email_address=email_address)).first()
+  physician = db.session.scalars(db.select(Physician).filter_by(first_name=first_name,last_name=last_name,email_address=email_address)).first()
   if physician:
     return jsonify({'error': 'Physician already exists'}), 422
-  physician = Physician(name=name,email_address=email_address)
+  physician = Physician(first_name=first_name,last_name=last_name,email_address=email_address)
   db.session.add(physician)
   db.session.commit()
   return jsonify(physician.dict())

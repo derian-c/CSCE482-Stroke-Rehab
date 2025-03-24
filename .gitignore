@@ -10,3 +10,5 @@ backend/seed.py
 
 #ignore backend coverage file
 backend/.coverage
+
+.DS_Store

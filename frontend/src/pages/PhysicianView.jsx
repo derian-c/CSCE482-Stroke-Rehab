@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { getPatients, createPatient } from "@/apis/patientService";
+import React, { useState, useEffect, useRef } from "react";
+import { getPatients } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -17,6 +17,8 @@ import {
   BarChart,
   MessageCircle
 } from "lucide-react";
+import { socket } from '@/socket'
+import { getMessages } from '@/apis/messagesService'
 
 const PhysicianView = () => {
   const { user, logout } = useAuth0();
@@ -55,9 +57,18 @@ const PhysicianView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("model"); // Options: "model", "messages"
+  const selectedPatientRef = useRef()
+
+  useEffect(() => {
+    selectedPatientRef.current = selectedPatient
+  }, [selectedPatient])
 
   const handlePatientClick = (patient) => {
+    if(selectedPatient != null){
+      socket.emit('leave',{'patient_id':selectedPatient.id,'physician_id':1})
+    }
     setSelectedPatient(patient);
+    socket.emit('join',{'patient_id':patient.id,'physician_id':1})
     setShowDetail(true);
     
     // On mobile, collapse sidebar when patient is selected
@@ -66,52 +77,44 @@ const PhysicianView = () => {
     }
   };
 
+  useEffect(() => {
+    function onMessageEvent(data) {
+      const patient = selectedPatientRef.current
+      setPatients(patients => {
+        const updatedPatients = patients.map(p => {
+          if(p.id == patient.id){
+            setSelectedPatient(selectedPatient => {return {...p, messages: [...(p.messages),data]}})
+            return {...p, messages: [...(p.messages),data]}
+          }
+          return p
+        })
+        return updatedPatients
+      })
+    }
+    socket.on('message', onMessageEvent)
+    return () => {
+      socket.off('message', onMessageEvent)
+    }
+  }, []);
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     
     try {
-      // create message object
-      const newMessage = {
-        senderId: user?.sub, 
-        senderName: `Dr. ${user?.name || "Provider"}`,
-        recipientId: selectedPatient.id,
-        content: message,
-        timestamp: new Date().toISOString(),
-        isRead: false
-      };
+      // create message
+      const newMessageObj = {
+        'patient_id': 1,
+        'physician_id': 1,
+        'content': message,
+        'sender': 1
+      }
+      socket.emit('message', newMessageObj)
       
-      // handling response example
-      // const response = await sendMessageToPatient(newMessage);
-      
-      const updatedPatients = patients.map(patient => {
-        if (patient.id === selectedPatient.id) {
-          return {
-            ...patient,
-            messages: [...(patient.messages || []), newMessage]
-          };
-        }
-        return patient;
-      });
-      
-      setPatients(updatedPatients);
-      setSelectedPatient({
-        ...selectedPatient,
-        messages: [...(selectedPatient.messages || []), newMessage]
-      });
-      
-      // clear message input
-      setMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
-      
     }
   };
 
-  
-  const fetchPatientMessages = async (patientId) => {
-    // fetch message implementation here
-    return [];
-  };
 
   const getQualityColor = (quality) => {
     if (quality.toLowerCase().includes("good") || quality.toLowerCase().includes("strong") || quality.toLowerCase().includes("improved")) {
@@ -142,8 +145,9 @@ const PhysicianView = () => {
           
           // fetch patient messages
           try {
-            const messages = await fetchPatientMessages(patientsCopy[i].id);
-            patientsCopy[i].messages = messages;
+            const response = await getMessages({'physician_id':1, 'patient_id':i+1});
+            const data = await response.json()
+            patientsCopy[i].messages = data;
           } catch (error) {
             console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
             patientsCopy[i].messages = [];
@@ -342,23 +346,23 @@ const PhysicianView = () => {
                           {selectedPatient.messages.map((msg, index) => (
                             <div
                               key={index}
-                              className={`flex ${msg.senderId === user?.sub ? 'justify-end' : 'justify-start'}`}
+                              className={`flex ${msg.sender == 1 ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
                                 className={`max-w-[80%] rounded-lg p-3 ${
-                                  msg.senderId === user?.sub
+                                  msg.sender == 1
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-white border border-gray-300'
+                                    : 'bg-white border border-gray-300 text-black'
                                 }`}
                               >
                                 <div className="flex items-center">
                                   <span className="font-medium text-sm">
-                                    {msg.senderId === user?.sub ? 'You' : msg.senderName || 'Patient'}
+                                    {msg.sender == 1 ? 'You' : 'Patient'}
                                   </span>
                                 </div>
                                 <p className="mt-1">{msg.content}</p>
                                 <div className={`text-xs mt-1 text-right ${
-                                  msg.senderId === user?.sub ? 'text-blue-200' : 'text-gray-400'
+                                  msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
                                 }`}>
                                   {formatMessageDate(msg.timestamp)}
                                 </div>

@@ -15,6 +15,8 @@ import {
   MessageCircle
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { getMessages } from '@/apis/messagesService'
+import { socket } from '@/socket'
 
 const PatientView = () => {
   const { user, logout } = useAuth0();
@@ -39,6 +41,14 @@ const PatientView = () => {
     const fetchMessages = async () => {
       try {
         // get messages here
+        const response = await getMessages({'patient_id':1,'physician_id':1})
+        const data = await response.json()
+        if(response.ok){
+          setMessages(data)
+        }else{
+          throw new Error(data.error)
+        }
+        
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -47,31 +57,30 @@ const PatientView = () => {
     fetchMessages();
   }, []);
 
+  useEffect(() => {
+    function onMessageEvent(data) {
+      setMessages(messages => [...messages, data])
+    }
+    socket.on('message', onMessageEvent)
+    socket.emit('join',{'patient_id':1,'physician_id':1})
+
+    return () => {
+      socket.off('message', onMessageEvent)
+    }
+  }, []);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
     
     try {
       // create message
       const newMessageObj = {
-        id: messages.length + 1,
-        senderId: user?.sub, 
-        senderName: user?.name || "Patient",
-        recipientId: "physician_id",
-        recipientName: "Dr. Smith", 
-        content: newMessage,
-        timestamp: new Date().toISOString(),
-        isRead: false
-      };
-      
-      // example response format
-      // const response = await fetch('/api/messages', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newMessageObj)
-      // });
-      
-      setMessages(prevMessages => [...prevMessages, newMessageObj]);
-      setNewMessage("");
+        'patient_id': 1,
+        'physician_id': 1,
+        'content': newMessage,
+        'sender': 0
+      }
+      socket.emit('message', newMessageObj)
       
     } catch (error) {
       console.error("Error sending message:", error);
@@ -245,7 +254,7 @@ const PatientView = () => {
                   {messages && messages.length > 0 ? (
                     <div className="space-y-4">
                       {messages.map((msg, index) => {
-                        const isFromMe = msg.senderId === user?.sub;
+                        const isFromMe = msg.sender == 0;
                         
                         // can add functionality to see if a message has been viewed/read here
                         
@@ -258,12 +267,12 @@ const PatientView = () => {
                               className={`max-w-[80%] rounded-lg p-3 ${
                                 isFromMe
                                   ? 'bg-blue-600 text-white'
-                                  : 'bg-white border border-gray-300'
+                                  : 'bg-white border border-gray-300 text-black'
                               }`}
                             >
                               <div className="flex items-center">
                                 <span className="font-medium text-sm">
-                                  {isFromMe ? 'You' : msg.senderName}
+                                  {isFromMe ? 'You' : 'Physician'}
                                 </span>
                               </div>
                               <p className="mt-1">{msg.content}</p>

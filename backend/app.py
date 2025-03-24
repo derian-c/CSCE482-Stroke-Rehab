@@ -38,7 +38,7 @@ app.register_blueprint(admins)
 from controllers.chat_message import chat_messages
 app.register_blueprint(chat_messages)
 
-sock = SocketIO(app)
+sock = SocketIO(app, cors_allowed_origins=frontend_url)
 
 @sock.on('join')
 def on_join(data):
@@ -64,7 +64,9 @@ def on_message(data):
   chat_message = ChatMessage(chat_id=chat_id,sender=sender,content=content)
   db.session.add(chat_message)
   db.session.commit()
-  sock.send(data,to=chat_id,include_self=False)
+  chat_json = chat_message.dict()
+  chat_json['timestamp'] = str(chat_json['timestamp'])
+  sock.send(chat_json,to=chat_id)
 
 
 @app.errorhandler(AuthError)

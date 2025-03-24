@@ -18,7 +18,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         audience: audience,
         redirect_uri: window.location.origin,
       }}
-      useRefreshTokens={true}
+      //useRefreshTokens={true}
       cacheLocation="localstorage"
     >
       <BrowserRouter>

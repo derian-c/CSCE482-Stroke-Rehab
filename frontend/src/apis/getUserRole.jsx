@@ -8,7 +8,7 @@ export function getUsersRole(user, token) {
 
   try {
     const decoded = jwtDecode(token);
-
+    console.log(decoded);
     // Access your custom roles claim (with your namespace!)
     userRoles = decoded["https://yourapp.com/roles"] || [];
   } catch (error) {

@@ -3,6 +3,8 @@ import { isAdmin } from "../apis/isAdmin";
 import { getUsersRole } from "../apis/getUserRole";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
+import { getPhysicians } from '@/apis/physicianService'
+import { getAdmins } from '@/apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
 
 import {
@@ -86,10 +88,8 @@ function AdminView() {
     const fetchPhysicians = async () => {
       try {
         setIsLoadingPhysicians(true);
-        const token = await getAccessTokenSilently();
-        const response = await fetch("/physician/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // const token = await getAccessTokenSilently();
+        const response = await getPhysicians()
 
         if (!response.ok) throw new Error("Failed to fetch physicians");
 
@@ -121,10 +121,8 @@ function AdminView() {
     const fetchAdmins = async () => {
       try {
         setIsLoadingAdmins(true);
-        const token = await getAccessTokenSilently();
-        const response = await fetch("/admins/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // const token = await getAccessTokenSilently();
+        const response = await getAdmins()
 
         if (!response.ok) throw new Error("Failed to fetch admins");
 

@@ -57,11 +57,21 @@ const PhysicianView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("model"); // Options: "model", "messages"
-  const selectedPatientRef = useRef()
+  const selectedPatientRef = useRef();
+  const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
 
   useEffect(() => {
     selectedPatientRef.current = selectedPatient
-  }, [selectedPatient])
+  }, [selectedPatient]);
+
+  // Scroll to bottom of messages when new messages are added
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedPatient?.messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handlePatientClick = (patient) => {
     if(selectedPatient != null){
@@ -109,12 +119,20 @@ const PhysicianView = () => {
         'sender': 1
       }
       socket.emit('message', newMessageObj)
+      setMessage(""); // Clear message input after sending
       
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
 
+  // Handle Enter key press to send message
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent new line
+      handleSendMessage();
+    }
+  };
 
   const getQualityColor = (quality) => {
     if (quality.toLowerCase().includes("good") || quality.toLowerCase().includes("strong") || quality.toLowerCase().includes("improved")) {
@@ -360,7 +378,7 @@ const PhysicianView = () => {
                                     {msg.sender == 1 ? 'You' : 'Patient'}
                                   </span>
                                 </div>
-                                <p className="mt-1">{msg.content}</p>
+                                <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
                                 <div className={`text-xs mt-1 text-right ${
                                   msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
                                 }`}>
@@ -369,6 +387,8 @@ const PhysicianView = () => {
                               </div>
                             </div>
                           ))}
+                          {/* Invisible div at the end for auto-scrolling */}
+                          <div ref={messagesEndRef} />
                         </div>
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-500">
@@ -383,6 +403,7 @@ const PhysicianView = () => {
                       <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Type your message here..."
                         className="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 
                           text-gray-900 

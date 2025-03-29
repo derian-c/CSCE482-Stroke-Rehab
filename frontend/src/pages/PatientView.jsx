@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Activity,
   MessageSquare,
@@ -23,6 +23,7 @@ const PatientView = () => {
   
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef(); // Reference for auto-scrolling
   
   // messages state
   const [messages, setMessages] = useState([
@@ -36,6 +37,15 @@ const PatientView = () => {
     { id: 2, name: "Weekly Exercise Goals", progress: 75 },
     { id: 3, name: "Physical Therapy Sessions", progress: 60 },
   ];
+
+  // Scroll to bottom of messages when new messages are added
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -81,10 +91,19 @@ const PatientView = () => {
         'sender': 0
       }
       socket.emit('message', newMessageObj)
+      setNewMessage(""); // Clear message input after sending
       
     } catch (error) {
       console.error("Error sending message:", error);
       
+    }
+  };
+
+  // Handle Enter key press to send message
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent new line
+      handleSendMessage();
     }
   };
 
@@ -275,7 +294,7 @@ const PatientView = () => {
                                   {isFromMe ? 'You' : 'Physician'}
                                 </span>
                               </div>
-                              <p className="mt-1">{msg.content}</p>
+                              <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
                               <div className={`text-xs mt-1 text-right ${
                                 isFromMe ? 'text-blue-200' : 'text-gray-400'
                               }`}>
@@ -285,6 +304,8 @@ const PatientView = () => {
                           </div>
                         );
                       })}
+                      {/* Invisible div at the end for auto-scrolling */}
+                      <div ref={messagesEndRef} />
                     </div>
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500">
@@ -300,6 +321,7 @@ const PatientView = () => {
                   <textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder="Type your message here..."
                     className="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 
                       text-gray-900 

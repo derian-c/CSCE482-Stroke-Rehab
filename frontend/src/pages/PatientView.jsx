@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   MessageSquare,
@@ -12,23 +13,39 @@ import {
   Medal,
   User,
   LogOut,
-  MessageCircle
+  MessageCircle,
+  PlusCircle,
+  Clock
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { getMessages } from '@/apis/messagesService'
-import { socket } from '@/socket'
+import { getMessages } from '@/apis/messagesService';
+import { socket } from '@/socket';
+import AccessibilityMenu from '../components/AccessibilityMenu';
 
 const PatientView = () => {
   const { user, logout } = useAuth0();
+  const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(); // Reference for auto-scrolling
   
   // messages state
-  const [messages, setMessages] = useState([
-    // put here
+  const [messages, setMessages] = useState([]);
+  
+  // Medication states
+  const [medications, setMedications] = useState([
+    { id: 1, name: "Ibuprofen", dosage: "400mg", frequency: "Twice daily", logs: [{timestamp: "2025-03-28T14:30:00"}] },
+    { id: 2, name: "Lisinopril", dosage: "10mg", frequency: "Once daily", logs: [{timestamp: "2025-03-28T08:15:00"}] },
+    { id: 3, name: "Vitamin D", dosage: "1000 IU", frequency: "Once daily", logs: [{timestamp: "2025-03-28T09:00:00"}] }
   ]);
+  
+  // New medication form state
+  const [newMedication, setNewMedication] = useState({
+    name: "",
+    dosage: "",
+    frequency: ""
+  });
   
   // sample
   const exerciseProgress = 75;
@@ -112,17 +129,55 @@ const PatientView = () => {
     return date.toLocaleString();
   };
 
+  // Handle adding a new medication
+  const handleAddMedication = (e) => {
+    e.preventDefault();
+    if (!newMedication.name || !newMedication.dosage || !newMedication.frequency) return;
+    
+    const newMed = {
+      id: medications.length + 1,
+      ...newMedication,
+      logs: []
+    };
+    
+    setMedications([...medications, newMed]);
+    setNewMedication({ name: "", dosage: "", frequency: "" });
+  };
+
+  // Handle logging medication intake
+  const handleLogMedication = (id) => {
+    const updatedMedications = medications.map(med => {
+      if (med.id === id) {
+        return {
+          ...med,
+          logs: [...med.logs, { timestamp: new Date().toISOString() }]
+        };
+      }
+      return med;
+    });
+    
+    setMedications(updatedMedications);
+  };
+
+  // Handle input change for new medication form
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewMedication({ ...newMedication, [name]: value });
+  };
+
   const TabButton = ({ tab, icon, label, notification = false }) => (
     <button
       onClick={() => setActiveTab(tab)}
       className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
         activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
       }`}
+      aria-selected={activeTab === tab}
+      aria-controls={`${tab}-panel`}
     >
-      {React.createElement(icon, { className: "h-4 w-4 mr-1" })}
+      {React.createElement(icon, { className: "h-4 w-4 mr-1", "aria-hidden": "true" })}
       {label}
       {notification && (
-        <span className="ml-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        <span className="ml-1 w-2 h-2 bg-red-500 rounded-full" aria-label="New notifications"></span>
       )}
     </button>
   );
@@ -132,13 +187,23 @@ const PatientView = () => {
     msg.senderId !== user?.sub && !msg.isRead
   ).length;
 
+  // Handle navigation to record pages
+  const navigateToPage = (page) => {
+    navigate(`/${page}`);
+  };
+
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
+      {/* Skip to content link for keyboard users */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
+      
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center">
-            <User className="h-6 w-6 sm:h-8 sm:w-8 mr-2 text-blue-600" />
+            <User className="h-6 w-6 sm:h-8 sm:w-8 mr-2 text-blue-600" aria-hidden="true" />
             Patient Dashboard
           </h1>
           <div className="flex items-center">
@@ -158,17 +223,18 @@ const PatientView = () => {
               onClick={() => logout({ returnTo: window.location.origin })}
               className="text-gray-500 hover:text-red-600 transition-colors"
               title="Logout"
+              aria-label="Logout"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         </div>
         
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-md w-full mb-6">
+        <div id="main-content" className="bg-white rounded-lg shadow-md w-full mb-6" role="main">
           {/* Tabs */}
           <div className="border-b border-gray-200 overflow-x-auto w-full">
-            <nav className="flex w-full">
+            <nav className="flex w-full" role="tablist">
               <TabButton tab="dashboard" icon={Activity} label="Dashboard" />
               <TabButton 
                 tab="messages" 
@@ -185,30 +251,30 @@ const PatientView = () => {
           <div className="p-4 sm:p-6 w-full">
             {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
-              <div>
+              <div id="dashboard-panel" role="tabpanel" aria-labelledby="dashboard-tab">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="mb-4 flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                      <TrendingUp className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                       <h2 className="text-xl font-semibold text-gray-900">
                         Exercise Progress
                       </h2>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div className="w-full bg-gray-200 rounded-full h-4" role="progressbar" aria-valuenow={exerciseProgress} aria-valuemin="0" aria-valuemax="100">
                       <div
                         className="bg-blue-600 h-4 rounded-full transition-all duration-300"
                         style={{ width: `${exerciseProgress}%` }}
                       ></div>
                     </div>
                     <p className="text-sm text-gray-600 mt-2 flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                      <CheckCircle className="h-4 w-4 mr-1 text-green-500" aria-hidden="true" />
                       {exerciseProgress}% of weekly exercises completed
                     </p>
                   </div>
 
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="mb-4 flex items-center">
-                      <Medal className="h-5 w-5 mr-2 text-blue-600" />
+                      <Medal className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                       <h2 className="text-xl font-semibold text-gray-900">
                         Treatment Milestones
                       </h2>
@@ -218,14 +284,20 @@ const PatientView = () => {
                         <div key={milestone.id}>
                           <div className="flex justify-between mb-1">
                             <span className="text-sm text-gray-900 flex items-center">
-                              <CheckCircle className={`h-3 w-3 mr-1 ${milestone.progress === 100 ? "text-green-500" : "text-blue-600"}`} />
+                              <CheckCircle className={`h-3 w-3 mr-1 ${milestone.progress === 100 ? "text-green-500" : "text-blue-600"}`} aria-hidden="true" />
                               {milestone.name}
                             </span>
                             <span className="text-sm text-gray-900">
                               {milestone.progress}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div 
+                            className="w-full bg-gray-200 rounded-full h-4" 
+                            role="progressbar"
+                            aria-valuenow={milestone.progress}
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                          >
                             <div
                               className={`${milestone.progress === 100 ? "bg-green-500" : "bg-blue-600"} h-4 rounded-full transition-all duration-300`}
                               style={{ width: `${milestone.progress}%` }}
@@ -238,21 +310,22 @@ const PatientView = () => {
                 </div>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
+                  <ClipboardList className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                   Quick Access
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {[
-                    { icon: ClipboardList, label: "Medical History" },
-                    { icon: Activity, label: "Exercise Plans" },
-                    { icon: FileText, label: "Test Results" },
-                    { icon: Pill, label: "Medications" }
+                    { icon: ClipboardList, label: "Medical History", path: "medical-history" },
+                    { icon: Activity, label: "Exercise Records", path: "exercise-records" },
+                    { icon: FileText, label: "Lab Results", path: "lab-results" }
                   ].map((item, index) => (
                     <button 
                       key={index}
+                      onClick={() => navigateToPage(item.path)}
                       className="h-24 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-2 text-gray-900"
+                      aria-label={`Go to ${item.label}`}
                     >
-                      {React.createElement(item.icon, { className: "h-6 w-6 text-blue-600" })}
+                      {React.createElement(item.icon, { className: "h-6 w-6 text-blue-600", "aria-hidden": "true" })}
                       <span className="font-medium">{item.label}</span>
                     </button>
                   ))}
@@ -262,20 +335,18 @@ const PatientView = () => {
 
             {/* Messages Tab */}
             {activeTab === "messages" && (
-              <div>
+              <div id="messages-panel" role="tabpanel" aria-labelledby="messages-tab">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <MessageSquare className="h-5 w-5 mr-2 text-blue-600" />
+                  <MessageSquare className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                   Messages with Your Care Team
                 </h2>
                 
                 {/* Message History */}
-                <div className="bg-gray-100 rounded-lg p-4 h-96 overflow-y-auto mb-4">
+                <div className="bg-gray-100 rounded-lg p-4 h-96 overflow-y-auto mb-4" aria-live="polite">
                   {messages && messages.length > 0 ? (
                     <div className="space-y-4">
                       {messages.map((msg, index) => {
                         const isFromMe = msg.sender == 0;
-                        
-                        // can add functionality to see if a message has been viewed/read here
                         
                         return (
                           <div
@@ -309,7 +380,7 @@ const PatientView = () => {
                     </div>
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                      <MessageCircle className="h-12 w-12 text-gray-300 mb-2" />
+                      <MessageCircle className="h-12 w-12 text-gray-300 mb-2" aria-hidden="true" />
                       <p>No messages yet</p>
                       <p className="text-sm text-gray-400 mt-1">Send a message to your care team</p>
                     </div>
@@ -328,12 +399,14 @@ const PatientView = () => {
                       placeholder-gray-500
                       bg-white
                       border-gray-300"
+                    aria-label="Message text"
                   />
                   <button
                     onClick={handleSendMessage}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                    aria-label="Send message"
                   >
-                    <Send className="h-4 w-4 mr-2" />
+                    <Send className="h-4 w-4 mr-2" aria-hidden="true" />
                     Send Message
                   </button>
                 </div>
@@ -342,13 +415,13 @@ const PatientView = () => {
 
             {/* Medical Records Tab */}
             {activeTab === "records" && (
-              <div>
+              <div id="records-panel" role="tabpanel" aria-labelledby="records-tab">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                  <FileText className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                   Medical Records
                 </h2>
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 flex items-center">
-                  <ClipboardList className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0" />
+                  <ClipboardList className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0" aria-hidden="true" />
                   <div>
                     <h3 className="font-medium text-blue-700">Your Records</h3>
                     <p className="text-sm text-blue-600">
@@ -359,19 +432,22 @@ const PatientView = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { icon: ClipboardList, title: "Medical History", date: "Last updated: Feb 10, 2025" },
-                    { icon: Activity, title: "Exercise Records", date: "Last updated: Feb 15, 2025" },
-                    { icon: FileText, title: "Lab Results", date: "Last updated: Jan 25, 2025" },
-                    { icon: Calendar, title: "Appointment History", date: "Last updated: Feb 18, 2025" }
+                    { icon: ClipboardList, title: "Medical History", date: "Last updated: Feb 10, 2025", path: "medical-history" },
+                    { icon: Activity, title: "Exercise Records", date: "Last updated: Feb 15, 2025", path: "exercise-records" },
+                    { icon: FileText, title: "Lab Results", date: "Last updated: Jan 25, 2025", path: "lab-results" }
                   ].map((record, index) => (
                     <div key={index} className="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex items-center mb-2">
-                        {React.createElement(record.icon, { className: "h-5 w-5 mr-2 text-blue-600" })}
+                        {React.createElement(record.icon, { className: "h-5 w-5 mr-2 text-blue-600", "aria-hidden": "true" })}
                         <h3 className="font-medium text-gray-900">{record.title}</h3>
                       </div>
                       <p className="text-sm text-gray-500">{record.date}</p>
-                      <button className="mt-3 text-blue-600 text-sm flex items-center">
-                        <FileText className="h-3 w-3 mr-1" />
+                      <button 
+                        className="mt-3 text-blue-600 text-sm flex items-center"
+                        aria-label={`View ${record.title} details`}
+                        onClick={() => navigateToPage(record.path)}
+                      >
+                        <FileText className="h-3 w-3 mr-1" aria-hidden="true" />
                         View details
                       </button>
                     </div>
@@ -382,59 +458,154 @@ const PatientView = () => {
 
             {/* Prescriptions Tab */}
             {activeTab === "prescriptions" && (
-              <div>
+              <div id="prescriptions-panel" role="tabpanel" aria-labelledby="prescriptions-tab">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <Pill className="h-5 w-5 mr-2 text-blue-600" />
+                  <Pill className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                   Prescriptions & Medications
                 </h2>
                 
                 <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6 flex items-center">
-                  <Pill className="h-6 w-6 text-green-600 mr-3 flex-shrink-0" />
+                  <Pill className="h-6 w-6 text-green-600 mr-3 flex-shrink-0" aria-hidden="true" />
                   <div>
-                    <h3 className="font-medium text-green-700">Medication Reminder</h3>
+                    <h3 className="font-medium text-green-700">Medication Tracker</h3>
                     <p className="text-sm text-green-600">
-                      Remember to take your medications as prescribed. Contact your doctor if you have any questions about your prescriptions.
+                      Track your medications and log when you take them. You can also add new medications prescribed to you.
                     </p>
                   </div>
                 </div>
                 
-                <div className="space-y-4">
-                  {[
-                    { name: "Ibuprofen", dosage: "400mg", frequency: "Twice daily", refill: "3 refills remaining" },
-                    { name: "Lisinopril", dosage: "10mg", frequency: "Once daily", refill: "1 refill remaining" },
-                    { name: "Vitamin D", dosage: "1000 IU", frequency: "Once daily", refill: "Auto-refill enabled" }
-                  ].map((medication, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-md p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium text-gray-900 flex items-center">
-                            <Pill className="h-4 w-4 mr-1 text-blue-600" />
-                            {medication.name}
-                          </h3>
-                          <p className="text-sm text-gray-600 mt-1">{medication.dosage} · {medication.frequency}</p>
-                        </div>
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                          {medication.refill}
-                        </span>
-                      </div>
-                      <div className="flex mt-3 space-x-3">
-                        <button className="text-xs text-blue-600 flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Schedule Refill
-                        </button>
-                        <button className="text-xs text-blue-600 flex items-center">
-                          <FileText className="h-3 w-3 mr-1" />
-                          View Details
-                        </button>
-                      </div>
+                {/* Add New Medication Form */}
+                <div className="bg-white border border-gray-200 rounded-md p-4 mb-6">
+                  <h3 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <PlusCircle className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
+                    Add New Medication
+                  </h3>
+                  
+                  <form onSubmit={handleAddMedication} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label htmlFor="med-name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Medication Name
+                      </label>
+                      <input
+                        type="text"
+                        id="med-name"
+                        name="name"
+                        value={newMedication.name}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g. Ibuprofen"
+                        required
+                      />
                     </div>
-                  ))}
+                    
+                    <div>
+                      <label htmlFor="med-dosage" className="block text-sm font-medium text-gray-700 mb-1">
+                        Dosage
+                      </label>
+                      <input
+                        type="text"
+                        id="med-dosage"
+                        name="dosage"
+                        value={newMedication.dosage}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g. 400mg"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="med-frequency" className="block text-sm font-medium text-gray-700 mb-1">
+                        Frequency
+                      </label>
+                      <input
+                        type="text"
+                        id="med-frequency"
+                        name="frequency"
+                        value={newMedication.frequency}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g. Twice daily"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-3">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" aria-hidden="true" />
+                        Add Medication
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                
+                {/* Medications List */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Pill className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
+                    Your Medications
+                  </h3>
+                  
+                  {medications.length > 0 ? (
+                    medications.map(medication => (
+                      <div key={medication.id} className="bg-white border border-gray-200 rounded-md p-4">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start">
+                          <div>
+                            <h4 className="font-medium text-gray-900 flex items-center">
+                              <Pill className="h-4 w-4 mr-1 text-blue-600" aria-hidden="true" />
+                              {medication.name}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {medication.dosage} · {medication.frequency}
+                            </p>
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleLogMedication(medication.id)}
+                            className="mt-3 md:mt-0 px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors flex items-center self-start"
+                            aria-label={`Log intake for ${medication.name}`}
+                          >
+                            <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
+                            Log Intake
+                          </button>
+                        </div>
+                        
+                        {/* Medication Logs */}
+                        <div className="mt-3">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Intake:</h5>
+                          {medication.logs.length > 0 ? (
+                            <div className="max-h-32 overflow-y-auto">
+                              {medication.logs.slice().reverse().map((log, idx) => (
+                                <div key={idx} className="text-xs text-gray-600 py-1 flex items-center border-b border-gray-100 last:border-0">
+                                  <Clock className="h-3 w-3 mr-1 text-blue-600" aria-hidden="true" />
+                                  {formatMessageDate(log.timestamp)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">No logs yet</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <Pill className="h-8 w-8 mx-auto text-gray-300 mb-2" aria-hidden="true" />
+                      <p>No medications added yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
+      
+      {/* Accessibility Menu */}
+      <AccessibilityMenu />
     </div>
   );
 };

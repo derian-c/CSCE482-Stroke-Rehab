@@ -51,6 +51,13 @@ const PhysicianView = () => {
     },
   ]);
 
+  // State to track which messages have been read - stored in localStorage
+  const [readMessageIds, setReadMessageIds] = useState(() => {
+    // Initialize from localStorage if available
+    const savedReadIds = localStorage.getItem('physicianReadMessageIds');
+    return savedReadIds ? JSON.parse(savedReadIds) : [];
+  });
+
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [message, setMessage] = useState("");
   const [showDetail, setShowDetail] = useState(false);
@@ -64,13 +71,30 @@ const PhysicianView = () => {
     selectedPatientRef.current = selectedPatient
   }, [selectedPatient]);
 
-  // Scroll to bottom of messages when new messages are added
+  // Scroll to bottom of messages when new messages are added or when switching to messages tab
   useEffect(() => {
-    scrollToBottom();
-  }, [selectedPatient?.messages]);
+    if (activeTab === "messages" && selectedPatient) {
+      scrollToBottom();
+    }
+  }, [selectedPatient?.messages, activeTab]);
+
+  // Update localStorage whenever readMessageIds changes
+  useEffect(() => {
+    localStorage.setItem('physicianReadMessageIds', JSON.stringify(readMessageIds));
+  }, [readMessageIds]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use setTimeout to ensure the DOM has updated before scrolling
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        // Get the messages container
+        const messageContainer = messagesEndRef.current.closest('.overflow-y-auto');
+        if (messageContainer) {
+          // Scroll the container instead of the entire page
+          messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+      }
+    }, 100);
   };
 
   const handlePatientClick = (patient) => {
@@ -87,6 +111,25 @@ const PhysicianView = () => {
     }
   };
 
+  // Handle tab switching - mark messages as read when messages tab is selected
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "messages" && selectedPatient) {
+      // Mark all of the selected patient's messages as read
+      const messageIds = selectedPatient.messages.map(msg => msg.id);
+      setReadMessageIds(prevReadIds => {
+        // Combine previous read IDs with all current message IDs
+        const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+        // Save to localStorage
+        localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+        return combinedIds;
+      });
+      
+      // Scroll to bottom
+      scrollToBottom();
+    }
+  };
+
   useEffect(() => {
     function onMessageEvent(data) {
       const patient = selectedPatientRef.current
@@ -100,12 +143,26 @@ const PhysicianView = () => {
         })
         return updatedPatients
       })
+      
+      // If the new message is not from the physician, don't automatically mark it as read
+      // unless the messages tab is currently active
+      if (data.sender != 1) {
+        if (activeTab === "messages") {
+          // If messages tab is active, mark the new message as read
+          setReadMessageIds(prevReadIds => {
+            const combinedIds = [...new Set([...prevReadIds, data.id])];
+            localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+            return combinedIds;
+          });
+        }
+        // If messages tab is not active, the message remains unread
+      }
     }
     socket.on('message', onMessageEvent)
     return () => {
       socket.off('message', onMessageEvent)
     }
-  }, []);
+  }, [activeTab]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -113,7 +170,7 @@ const PhysicianView = () => {
     try {
       // create message
       const newMessageObj = {
-        patient_id: 1,
+        patient_id: selectedPatient.id,
         physician_id: 1,
         content: message,
         sender: 1
@@ -149,6 +206,14 @@ const PhysicianView = () => {
     return date.toLocaleString();
   };
 
+  // Check for unread messages for a specific patient
+  const getUnreadMessagesCount = (patient) => {
+    if (!patient.messages) return 0;
+    return patient.messages.filter(msg => 
+      msg.sender != 1 && !readMessageIds.includes(msg.id)
+    ).length;
+  };
+
   useEffect(() => {
     async function loadPatients() {
       const response = await getPatients();
@@ -162,9 +227,19 @@ const PhysicianView = () => {
           
           // fetch patient messages
           try {
-            const response = await getMessages({'physician_id':1, 'patient_id':i+1});
+            const response = await getMessages({'physician_id':1, 'patient_id':patientsCopy[i].id});
             const data = await response.json()
             patientsCopy[i].messages = data;
+            
+            // If this patient is already selected and messages tab is active, mark messages as read
+            if (selectedPatient && selectedPatient.id === patientsCopy[i].id && activeTab === "messages") {
+              const messageIds = data.map(msg => msg.id);
+              setReadMessageIds(prevReadIds => {
+                const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+                localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+                return combinedIds;
+              });
+            }
           } catch (error) {
             console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
             patientsCopy[i].messages = [];
@@ -179,7 +254,7 @@ const PhysicianView = () => {
     }
 
     loadPatients();
-  }, []);
+  }, [activeTab, selectedPatient]);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
@@ -230,36 +305,39 @@ const PhysicianView = () => {
             </button>
           </div>
           <div className={`divide-y overflow-y-auto ${sidebarCollapsed ? 'hidden md:block' : 'block'}`}>
-            {patients.map((patient) => (
-              <button
-                key={patient.id}
-                onClick={() => handlePatientClick(patient)}
-                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${
-                  selectedPatient?.id === patient.id
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:text-gray-900"
-                } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
-              >
-                {sidebarCollapsed ? (
-                  <User className="h-6 w-6" />
-                ) : (
-                  <>
-                    <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
-                    <div className="overflow-hidden">
-                      <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.name}</div>
-                      <div className="text-xs text-gray-500 flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {patient.lastSession}
+            {patients.map((patient) => {
+              const unreadCount = getUnreadMessagesCount(patient);
+              return (
+                <button
+                  key={patient.id}
+                  onClick={() => handlePatientClick(patient)}
+                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${
+                    selectedPatient?.id === patient.id
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-700 hover:text-gray-900"
+                  } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
+                >
+                  {sidebarCollapsed ? (
+                    <User className="h-6 w-6" />
+                  ) : (
+                    <>
+                      <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
+                      <div className="overflow-hidden">
+                        <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.name}</div>
+                        <div className="text-xs text-gray-500 flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {patient.lastSession}
+                        </div>
                       </div>
-                    </div>
-                    {patient.messages && patient.messages.some(msg => !msg.isRead && msg.senderId !== user?.sub) && (
-                      <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
-                    )}
-                    <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
-                  </>
-                )}
-              </button>
-            ))}
+                      {unreadCount > 0 && (
+                        <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
+                      )}
+                      <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -283,7 +361,7 @@ const PhysicianView = () => {
                 <div className="mt-4 border-t pt-4">
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setActiveTab("model")}
+                      onClick={() => handleTabChange("model")}
                       className={`px-3 py-2 rounded-md flex items-center ${
                         activeTab === "model" 
                           ? "bg-blue-50 text-blue-700 font-medium" 
@@ -294,7 +372,7 @@ const PhysicianView = () => {
                       Patient Model
                     </button>
                     <button
-                      onClick={() => setActiveTab("messages")}
+                      onClick={() => handleTabChange("messages")}
                       className={`px-3 py-2 rounded-md flex items-center ${
                         activeTab === "messages" 
                           ? "bg-blue-50 text-blue-700 font-medium" 
@@ -303,10 +381,8 @@ const PhysicianView = () => {
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Messages
-                      {selectedPatient.messages && selectedPatient.messages.some(msg => !msg.isRead && msg.senderId !== user?.sub) && (
-                        <span className="ml-2 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                          {selectedPatient.messages.filter(msg => !msg.isRead && msg.senderId !== user?.sub).length}
-                        </span>
+                      {getUnreadMessagesCount(selectedPatient) > 0 && (
+                        <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
                       )}
                     </button>
                   </div>

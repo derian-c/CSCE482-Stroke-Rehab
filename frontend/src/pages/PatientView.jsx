@@ -63,7 +63,17 @@ const PatientView = () => {
   }, [messages, activeTab]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use setTimeout to ensure the DOM has updated before scrolling
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        // Get the messages container
+        const messageContainer = messagesEndRef.current.closest('.overflow-y-auto');
+        if (messageContainer) {
+          // Scroll the container instead of the entire page
+          messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+      }
+    }, 100);
   };
 
   // Handle tab switching - ensure auto-scroll to bottom when messages tab is selected
@@ -130,7 +140,7 @@ const PatientView = () => {
       }
     }
     socket.on('message', onMessageEvent)
-    socket.emit('join',{patient_id:1,physician_id:1})
+    socket.emit('join',{'patient_id':1,'physician_id':1})
 
     return () => {
       socket.off('message', onMessageEvent)
@@ -143,18 +153,18 @@ const PatientView = () => {
     try {
       // create message
       const newMessageObj = {
-        patient_id: 1,
-        physician_id: 1,
-        content: newMessage,
-        sender: 0
+        'patient_id': 1,
+        'physician_id': 1,
+        'content': newMessage,
+        'sender': 0
       }
       socket.emit('message', newMessageObj)
       setNewMessage(""); 
       
     } catch (error) {
-      console.error("Error sending message:", error); 
+      console.error("Error sending message:", error);
+      
     }
-    setNewMessage('')
   };
 
   // enter key to send message

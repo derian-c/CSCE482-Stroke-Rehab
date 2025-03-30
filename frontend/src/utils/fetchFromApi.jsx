@@ -40,8 +40,6 @@ const useFetchProtectedData = (apiEndpoint) => {
 
     fetchData();
   }, [getAccessTokenSilently, isAuthenticated, apiEndpoint]);
-
-  console.log(data)
   return { data, error, loading };
 };
 

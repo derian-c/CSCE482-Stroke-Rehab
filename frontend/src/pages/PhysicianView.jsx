@@ -75,10 +75,10 @@ const PhysicianView = () => {
 
   const handlePatientClick = (patient) => {
     if(selectedPatient != null){
-      socket.emit('leave',{'patient_id':selectedPatient.id,'physician_id':1})
+      socket.emit('leave',{patient_id: selectedPatient.id, physician_id: 1})
     }
     setSelectedPatient(patient);
-    socket.emit('join',{'patient_id':patient.id,'physician_id':1})
+    socket.emit('join',{patient_id: patient.id, physician_id: 1})
     setShowDetail(true);
     
     // On mobile, collapse sidebar when patient is selected
@@ -93,7 +93,7 @@ const PhysicianView = () => {
       setPatients(patients => {
         const updatedPatients = patients.map(p => {
           if(p.id == patient.id){
-            setSelectedPatient(selectedPatient => {return {...p, messages: [...(p.messages),data]}})
+            setSelectedPatient(() => {return {...p, messages: [...(p.messages),data]}})
             return {...p, messages: [...(p.messages),data]}
           }
           return p
@@ -113,17 +113,16 @@ const PhysicianView = () => {
     try {
       // create message
       const newMessageObj = {
-        'patient_id': 1,
-        'physician_id': 1,
-        'content': message,
-        'sender': 1
+        patient_id: 1,
+        physician_id: 1,
+        content: message,
+        sender: 1
       }
       socket.emit('message', newMessageObj)
-      setMessage(""); // Clear message input after sending
-      
     } catch (error) {
       console.error("Error sending message:", error);
     }
+    setMessage('')
   };
 
   // Handle Enter key press to send message

@@ -1,4 +1,3 @@
-// AccessibilityMenu.jsx
 import React, { useState, useEffect } from "react";
 import {
   Settings,
@@ -12,13 +11,10 @@ import {
 } from "lucide-react";
 
 const AccessibilityMenu = () => {
-  // Check if we're in a browser environment
   const isBrowser = typeof window !== "undefined";
   
-  // State for menu open/closed
   const [isOpen, setIsOpen] = useState(false);
   
-  // States for accessibility options
   const [fontSize, setFontSize] = useState(
     isBrowser && localStorage.getItem("accessibility-fontSize")
       ? localStorage.getItem("accessibility-fontSize")
@@ -39,24 +35,19 @@ const AccessibilityMenu = () => {
     isBrowser && localStorage.getItem("accessibility-screenReader") === "true"
   );
 
-  // TTS instance
   const [speechSynthesis, setSpeechSynthesis] = useState(null);
   const [speaking, setSpeaking] = useState(false);
   
-  // Initialize on mount
   useEffect(() => {
     if (isBrowser) {
-      // Initialize speech synthesis
       const synth = window.speechSynthesis;
       setSpeechSynthesis(synth);
       
-      // Apply saved settings on load
       applyFontSize(fontSize);
       applyColorTheme(colorTheme);
       applyScreenReaderMode(screenReaderMode);
     }
     
-    // Cancel any ongoing speech when component unmounts
     return () => {
       if (isBrowser && window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -64,15 +55,11 @@ const AccessibilityMenu = () => {
     };
   }, []);
 
-  // Apply font size - Directly target text elements with preserved controls size
   const applyFontSize = (size) => {
-    // Remove existing font size classes
     document.body.classList.remove('text-size-small', 'text-size-medium', 'text-size-large', 'text-size-xlarge');
     
-    // Add the new font size class
     document.body.classList.add(`text-size-${size}`);
     
-    // Apply specific scaling for different text elements
     const fontSizeMap = {
       small: {
         body: '14px',
@@ -112,7 +99,6 @@ const AccessibilityMenu = () => {
       }
     };
     
-    // Create a style element for custom sizing
     let styleEl = document.getElementById('accessibility-font-sizes');
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -120,7 +106,6 @@ const AccessibilityMenu = () => {
       document.head.appendChild(styleEl);
     }
     
-    // Set the font size CSS
     const sizeCss = `
       body.text-size-${size} { font-size: ${fontSizeMap[size].body}; }
       body.text-size-${size} h1 { font-size: ${fontSizeMap[size].h1}; }
@@ -128,12 +113,10 @@ const AccessibilityMenu = () => {
       body.text-size-${size} h3 { font-size: ${fontSizeMap[size].h3}; }
       body.text-size-${size} p { font-size: ${fontSizeMap[size].p}; }
       
-      /* Ensure buttons and inputs scale properly but exclude the accessibility menu */
       body.text-size-${size} button:not(.accessibility-button) { font-size: ${fontSizeMap[size].button}; }
       body.text-size-${size} input, 
       body.text-size-${size} textarea { font-size: ${fontSizeMap[size].input}; }
       
-      /* Keep accessibility menu controls manageable regardless of font size */
       .accessibility-menu-controls {
         font-size: 16px !important;
       }
@@ -151,19 +134,15 @@ const AccessibilityMenu = () => {
     styleEl.textContent = sizeCss;
   };
 
-  // Apply color theme - Simplified with colorblind-friendly options for Tailwind
   const applyColorTheme = (theme) => {
-    // Remove existing theme classes
     document.body.classList.remove(
       'theme-default',
       'theme-colorblind',
       'theme-high-contrast'
     );
     
-    // Add new theme class
     document.body.classList.add(`theme-${theme}`);
     
-    // Create or get the style element for theme
     let themeStyleEl = document.getElementById('accessibility-color-theme');
     if (!themeStyleEl) {
       themeStyleEl = document.createElement('style');
@@ -171,14 +150,11 @@ const AccessibilityMenu = () => {
       document.head.appendChild(themeStyleEl);
     }
     
-    // Set theme-specific overrides that target Tailwind classes
     let themeCss = '';
     
     switch (theme) {
       case "colorblind":
-        // Optimized for all types of colorblindness with blue and orange
         themeCss = `
-          /* Override primary blue with a more distinct blue */
           .theme-colorblind .bg-blue-600, 
           .theme-colorblind .hover\\:bg-blue-700:hover,
           .theme-colorblind .focus\\:ring-blue-500:focus {
@@ -192,7 +168,6 @@ const AccessibilityMenu = () => {
             border-color: #0072B2 !important;
           }
           
-          /* Convert greens to blues */
           .theme-colorblind .bg-green-500, 
           .theme-colorblind .bg-green-600 {
             background-color: #0072B2 !important;
@@ -203,7 +178,6 @@ const AccessibilityMenu = () => {
             color: #0072B2 !important;
           }
           
-          /* Convert reds to orange */
           .theme-colorblind .bg-red-500,
           .theme-colorblind .bg-red-600 {
             background-color: #E69F00 !important;
@@ -213,7 +187,6 @@ const AccessibilityMenu = () => {
             color: #E69F00 !important;
           }
           
-          /* Background colors */
           .theme-colorblind .bg-blue-50 {
             background-color: #E6F3FF !important;
           }
@@ -224,9 +197,8 @@ const AccessibilityMenu = () => {
             background-color: #FFF6E6 !important;
           }
           
-          /* Add orange elements for better contrast */
           .theme-colorblind .bg-gray-200 {
-            background-color: #FFF0D9 !important; /* Light orange */
+            background-color: #FFF0D9 !important;
           }
           .theme-colorblind [role="progressbar"] > div {
             border: 1px solid #E69F00 !important;
@@ -235,33 +207,28 @@ const AccessibilityMenu = () => {
             border: 1px solid #E69F00 !important;
           }
           
-          /* Add orange accent to action elements */
           .theme-colorblind button:not(.accessibility-button):not(.theme-button):not(.bg-blue-600):not(.bg-red-500):not(.bg-green-500):hover {
             border-color: #E69F00 !important;
             box-shadow: 0 0 0 1px #E69F00 !important;
           }
           
-          /* Add orange to tab indicators */
           .theme-colorblind .border-b-2.border-blue-600 {
             border-color: #E69F00 !important;
           }
           
-          /* Add orange accents to cards and panels */
           .theme-colorblind .border.border-gray-200 {
             border-left: 3px solid #E69F00 !important;
           }
           
-          /* Make notifications and alerts orange */
           .theme-colorblind .bg-blue-100,
           .theme-colorblind .bg-blue-200 {
-            background-color: #FFF0D9 !important; /* Light orange */
+            background-color: #FFF0D9 !important;
             border: 1px solid #E69F00 !important;
           }
           .theme-colorblind .text-blue-800 {
-            color: #B25000 !important; /* Darker orange for text */
+            color: #B25000 !important;
           }
           
-          /* Ensure proper contrast */
           .theme-colorblind .text-white {
             color: white !important;
           }
@@ -273,13 +240,11 @@ const AccessibilityMenu = () => {
         
       case "high-contrast":
         themeCss = `
-          /* Set main background and text */
           .theme-high-contrast {
             background-color: black !important;
             color: white !important;
           }
           
-          /* Make all text white by default */
           .theme-high-contrast .text-gray-400,
           .theme-high-contrast .text-gray-500,
           .theme-high-contrast .text-gray-600,
@@ -293,7 +258,6 @@ const AccessibilityMenu = () => {
             color: white !important;
           }
           
-          /* Convert backgrounds to black */
           .theme-high-contrast .bg-white,
           .theme-high-contrast .bg-gray-50,
           .theme-high-contrast .bg-gray-100,
@@ -304,7 +268,6 @@ const AccessibilityMenu = () => {
             border: 2px solid white !important;
           }
           
-          /* Make interactive elements stand out */
           .theme-high-contrast .bg-blue-600,
           .theme-high-contrast .hover\\:bg-blue-700:hover,
           .theme-high-contrast .bg-green-500,
@@ -313,25 +276,21 @@ const AccessibilityMenu = () => {
             color: black !important;
           }
           
-          /* Style buttons */
           .theme-high-contrast button:not(.accessibility-button) {
             background-color: black !important;
             border: 2px solid white !important;
             color: white !important;
           }
           
-          /* Hover states */
           .theme-high-contrast button:not(.accessibility-button):hover {
             background-color: #333 !important;
           }
           
-          /* Links */
           .theme-high-contrast a {
             color: yellow !important;
             text-decoration: underline !important;
           }
           
-          /* Forms */
           .theme-high-contrast input,
           .theme-high-contrast textarea {
             background-color: black !important;
@@ -339,7 +298,6 @@ const AccessibilityMenu = () => {
             color: white !important;
           }
           
-          /* Exception for the accessibility panel itself */
           .theme-high-contrast .accessibility-menu-panel {
             background-color: black !important;
             border: 2px solid white !important;
@@ -355,7 +313,6 @@ const AccessibilityMenu = () => {
             color: black !important;
           }
           
-          /* Progress bars */
           .theme-high-contrast [role="progressbar"] {
             border: 1px solid white !important;
           }
@@ -366,9 +323,8 @@ const AccessibilityMenu = () => {
         `;
         break;
         
-      default: // Default theme
-        themeCss = ''; // Reset all custom styles
-        // Remove the style element if it exists
+      default:
+        themeCss = '';
         if (themeStyleEl) {
           themeStyleEl.textContent = '';
         }
@@ -378,10 +334,8 @@ const AccessibilityMenu = () => {
     themeStyleEl.textContent = themeCss;
   };
 
-  // Apply screen reader optimizations
   const applyScreenReaderMode = (enabled) => {
     if (enabled) {
-      // Add ARIA labels to all buttons without proper labels
       const unlabeledButtons = document.querySelectorAll('button:not([aria-label]):not(:has(*))');
       unlabeledButtons.forEach(button => {
         if (!button.textContent.trim()) {
@@ -389,13 +343,11 @@ const AccessibilityMenu = () => {
         }
       });
       
-      // Add role attributes where missing
       const navElements = document.querySelectorAll('nav:not([role])');
       navElements.forEach(nav => {
         nav.setAttribute('role', 'navigation');
       });
       
-      // Improve tab sections
       const tabPanels = document.querySelectorAll('[role="tabpanel"]');
       tabPanels.forEach(panel => {
         if (!panel.getAttribute('aria-labelledby')) {
@@ -405,13 +357,11 @@ const AccessibilityMenu = () => {
         }
       });
       
-      // Add tabindex to interactive elements
       const interactiveElements = document.querySelectorAll('div[onclick]:not([tabindex])');
       interactiveElements.forEach(element => {
         element.setAttribute('tabindex', '0');
       });
       
-      // Add skip-link if not present
       if (!document.querySelector('.skip-to-content')) {
         const skipLink = document.createElement('a');
         skipLink.href = '#main-content';
@@ -420,7 +370,6 @@ const AccessibilityMenu = () => {
         document.body.insertBefore(skipLink, document.body.firstChild);
       }
       
-      // Add main landmark if missing
       const mainContent = document.querySelector('#main-content');
       if (mainContent && !mainContent.getAttribute('role')) {
         mainContent.setAttribute('role', 'main');
@@ -428,10 +377,8 @@ const AccessibilityMenu = () => {
     }
   };
 
-  // Text to speech functionality
   const speakText = (text) => {
     if (speechSynthesis && textToSpeechEnabled) {
-      // Cancel any ongoing speech
       speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
@@ -448,7 +395,6 @@ const AccessibilityMenu = () => {
     }
   };
 
-  // Speak the page content section by section
   const speakPageContent = () => {
     if (speaking) {
       speechSynthesis.cancel();
@@ -456,7 +402,6 @@ const AccessibilityMenu = () => {
       return;
     }
     
-    // Get all headings and their associated content
     const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
     let textToRead = [];
     
@@ -464,7 +409,6 @@ const AccessibilityMenu = () => {
       const headingText = heading.textContent.trim();
       let contentText = '';
       
-      // Get the content following this heading until the next heading
       let nextEl = heading.nextElementSibling;
       while (nextEl && !nextEl.matches('h1, h2, h3, h4, h5, h6')) {
         contentText += ' ' + nextEl.textContent.trim();
@@ -474,7 +418,6 @@ const AccessibilityMenu = () => {
       textToRead.push(`${headingText}. ${contentText}`);
     });
     
-    // If no headings found, just read all paragraph content
     if (textToRead.length === 0) {
       const paragraphs = document.querySelectorAll('p');
       textToRead = Array.from(paragraphs).map(p => p.textContent.trim());
@@ -484,19 +427,16 @@ const AccessibilityMenu = () => {
     speakText(fullText);
   };
 
-  // Save settings to localStorage
   const saveSettings = () => {
     localStorage.setItem("accessibility-fontSize", fontSize);
     localStorage.setItem("accessibility-colorTheme", colorTheme);
     localStorage.setItem("accessibility-textToSpeech", textToSpeechEnabled);
     localStorage.setItem("accessibility-screenReader", screenReaderMode);
     
-    // Apply settings
     applyFontSize(fontSize);
     applyColorTheme(colorTheme);
     applyScreenReaderMode(screenReaderMode);
     
-    // Show saved notification
     const notification = document.createElement('div');
     notification.textContent = 'Settings saved!';
     notification.style.position = 'fixed';
@@ -514,28 +454,23 @@ const AccessibilityMenu = () => {
       document.body.removeChild(notification);
     }, 3000);
     
-    // Close menu after saving
     setIsOpen(false);
   };
 
-  // Reset settings
   const resetSettings = () => {
     setFontSize("medium");
     setColorTheme("default");
     setTextToSpeechEnabled(false);
     setScreenReaderMode(false);
     
-    // Remove from localStorage
     localStorage.removeItem("accessibility-fontSize");
     localStorage.removeItem("accessibility-colorTheme");
     localStorage.removeItem("accessibility-textToSpeech");
     localStorage.removeItem("accessibility-screenReader");
     
-    // Apply reset settings
     applyFontSize("medium");
     applyColorTheme("default");
     
-    // Reset speech synthesis
     if (speechSynthesis) {
       speechSynthesis.cancel();
       setSpeaking(false);
@@ -544,7 +479,6 @@ const AccessibilityMenu = () => {
 
   return (
     <div className="relative z-50">
-      {/* Accessibility button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="accessibility-button fixed right-4 bottom-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -553,7 +487,6 @@ const AccessibilityMenu = () => {
         <Settings className="h-6 w-6" />
       </button>
       
-      {/* Accessibility menu panel */}
       {isOpen && (
         <div className="accessibility-menu-panel accessibility-menu-controls fixed right-4 bottom-20 w-full max-w-md bg-white rounded-lg shadow-xl border border-gray-200 p-4 sm:p-6">
           <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
@@ -571,7 +504,6 @@ const AccessibilityMenu = () => {
           </div>
           
           <div className="space-y-6">
-            {/* Font Size */}
             <div>
               <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
                 <Type className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
@@ -597,7 +529,6 @@ const AccessibilityMenu = () => {
               </div>
             </div>
             
-            {/* Color Theme - Simplified */}
             <div>
               <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
                 <Eye className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
@@ -627,7 +558,6 @@ const AccessibilityMenu = () => {
               </div>
             </div>
             
-            {/* Text to Speech */}
             <div>
               <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
                 <Volume2 className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
@@ -668,7 +598,6 @@ const AccessibilityMenu = () => {
               </div>
             </div>
             
-            {/* Screen Reader Mode */}
             <div>
               <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
                 <Monitor className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
@@ -693,7 +622,6 @@ const AccessibilityMenu = () => {
               </label>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex space-x-3 pt-3 border-t border-gray-200">
               <button
                 onClick={saveSettings}

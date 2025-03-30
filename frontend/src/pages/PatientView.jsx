@@ -28,19 +28,19 @@ const PatientView = () => {
   
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newMessage, setNewMessage] = useState("");
-  const messagesEndRef = useRef(); // Reference for auto-scrolling
+  const messagesEndRef = useRef(); // reference for auto-scrolling
   
   // messages state
   const [messages, setMessages] = useState([]);
   
-  // Medication states
+  // medication states
   const [medications, setMedications] = useState([
     { id: 1, name: "Ibuprofen", dosage: "400mg", frequency: "Twice daily", logs: [{timestamp: "2025-03-28T14:30:00"}] },
     { id: 2, name: "Lisinopril", dosage: "10mg", frequency: "Once daily", logs: [{timestamp: "2025-03-28T08:15:00"}] },
     { id: 3, name: "Vitamin D", dosage: "1000 IU", frequency: "Once daily", logs: [{timestamp: "2025-03-28T09:00:00"}] }
   ]);
   
-  // New medication form state
+  // new medication form state
   const [newMedication, setNewMedication] = useState({
     name: "",
     dosage: "",
@@ -55,13 +55,36 @@ const PatientView = () => {
     { id: 3, name: "Physical Therapy Sessions", progress: 60 },
   ];
 
-  // Scroll to bottom of messages when new messages are added
+  // Auto-scroll to bottom when messages change or tab switches to messages
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (activeTab === "messages") {
+      scrollToBottom();
+    }
+  }, [messages, activeTab]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Handle tab switching - ensure auto-scroll to bottom when messages tab is selected
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "messages") {
+      // Use setTimeout to ensure the DOM has updated before scrolling
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      
+      // Mark all messages as read when messages tab is clicked
+      const messageIds = messages.map(msg => msg.id);
+      setReadMessageIds(prevReadIds => {
+        // Combine previous read IDs with all current message IDs
+        const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+        // Save to localStorage
+        localStorage.setItem('readMessageIds', JSON.stringify(combinedIds));
+        return combinedIds;
+      });
+    }
   };
 
   useEffect(() => {
@@ -71,7 +94,19 @@ const PatientView = () => {
         const response = await getMessages({'patient_id':1,'physician_id':1})
         const data = await response.json()
         if(response.ok){
-          setMessages(data)
+          setMessages(data);
+          
+          // If messages tab is already active when messages load, mark them as read
+          if (activeTab === "messages") {
+            const messageIds = data.map(msg => msg.id);
+            setReadMessageIds(prevReadIds => {
+              // Combine previous read IDs with all current message IDs
+              const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+              // Save to localStorage
+              localStorage.setItem('readMessageIds', JSON.stringify(combinedIds));
+              return combinedIds;
+            });
+          }
         }else{
           throw new Error(data.error)
         }
@@ -82,11 +117,17 @@ const PatientView = () => {
     };
     
     fetchMessages();
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     function onMessageEvent(data) {
       setMessages(messages => [...messages, data])
+      
+      // If the new message is not from the current user, don't automatically mark it as read
+      if (data.sender != 0) {
+        // We don't add it to readMessageIds here, so it will be counted as unread
+        // and will trigger the notification dot
+      }
     }
     socket.on('message', onMessageEvent)
     socket.emit('join',{'patient_id':1,'physician_id':1})
@@ -108,7 +149,7 @@ const PatientView = () => {
         'sender': 0
       }
       socket.emit('message', newMessageObj)
-      setNewMessage(""); // Clear message input after sending
+      setNewMessage(""); 
       
     } catch (error) {
       console.error("Error sending message:", error);
@@ -116,10 +157,10 @@ const PatientView = () => {
     }
   };
 
-  // Handle Enter key press to send message
+  // enter key to send message
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevent new line
+      e.preventDefault(); 
       handleSendMessage();
     }
   };
@@ -129,7 +170,7 @@ const PatientView = () => {
     return date.toLocaleString();
   };
 
-  // Handle adding a new medication
+  // adding new med
   const handleAddMedication = (e) => {
     e.preventDefault();
     if (!newMedication.name || !newMedication.dosage || !newMedication.frequency) return;
@@ -144,7 +185,7 @@ const PatientView = () => {
     setNewMedication({ name: "", dosage: "", frequency: "" });
   };
 
-  // Handle logging medication intake
+  // medication intake log
   const handleLogMedication = (id) => {
     const updatedMedications = medications.map(med => {
       if (med.id === id) {
@@ -159,7 +200,7 @@ const PatientView = () => {
     setMedications(updatedMedications);
   };
 
-  // Handle input change for new medication form
+  // add new medication
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewMedication({ ...newMedication, [name]: value });
@@ -167,7 +208,7 @@ const PatientView = () => {
 
   const TabButton = ({ tab, icon, label, notification = false }) => (
     <button
-      onClick={() => setActiveTab(tab)}
+      onClick={() => handleTabChange(tab)}
       className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
         activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
       }`}
@@ -182,12 +223,24 @@ const PatientView = () => {
     </button>
   );
 
-  // unread messages for notifs
+  // State to track which messages have been read - stored in localStorage
+  const [readMessageIds, setReadMessageIds] = useState(() => {
+    // Initialize from localStorage if available
+    const savedReadIds = localStorage.getItem('readMessageIds');
+    return savedReadIds ? JSON.parse(savedReadIds) : [];
+  });
+  
+  // Check for unread messages (those not in readMessageIds array)
   const unreadMessages = messages.filter(msg => 
-    msg.senderId !== user?.sub && !msg.isRead
+    msg.sender != 0 && !readMessageIds.includes(msg.id)
   ).length;
+  
+  // Update localStorage whenever readMessageIds changes
+  useEffect(() => {
+    localStorage.setItem('readMessageIds', JSON.stringify(readMessageIds));
+  }, [readMessageIds]);
 
-  // Handle navigation to record pages
+  // record page navigation
   const navigateToPage = (page) => {
     navigate(`/${page}`);
   };

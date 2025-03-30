@@ -16,7 +16,7 @@ function App() {
       <Route 
         path="/admin"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRole='Admin'>
             <AdminView />
           </ProtectedRoute>
         }
@@ -24,7 +24,7 @@ function App() {
       <Route 
         path="/patient"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRole='Patient'>
             <PatientView />
           </ProtectedRoute>
         }
@@ -32,7 +32,7 @@ function App() {
       <Route 
         path="/physician"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRole='Physician'>
             <PhysicianView />
           </ProtectedRoute>
         }
@@ -40,9 +40,9 @@ function App() {
       <Route 
         path="/provider"
         element={
-          <ProtectedRoute>
+          //<ProtectedRoute>
             <ProviderView />
-          </ProtectedRoute>
+          //</ProtectedRoute>
         }
       />
     </Routes>

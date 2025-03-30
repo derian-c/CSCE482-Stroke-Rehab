@@ -62,7 +62,7 @@ const PatientView = () => {
       setMessages(messages => [...messages, data])
     }
     socket.on('message', onMessageEvent)
-    socket.emit('join',{'patient_id':1,'physician_id':1})
+    socket.emit('join',{patient_id:1,physician_id:1})
 
     return () => {
       socket.off('message', onMessageEvent)
@@ -75,17 +75,17 @@ const PatientView = () => {
     try {
       // create message
       const newMessageObj = {
-        'patient_id': 1,
-        'physician_id': 1,
-        'content': newMessage,
-        'sender': 0
+        patient_id: 1,
+        physician_id: 1,
+        content: newMessage,
+        sender: 0
       }
       socket.emit('message', newMessageObj)
       
     } catch (error) {
-      console.error("Error sending message:", error);
-      
+      console.error("Error sending message:", error); 
     }
+    setNewMessage('')
   };
 
   const formatMessageDate = (dateString) => {

@@ -3,6 +3,8 @@ import { isAdmin } from "../apis/isAdmin";
 import { getUsersRole } from "../apis/getUserRole";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
+import { getPhysicians, createPhysician, deletePhysicianByID } from '@/apis/physicianService'
+import { getAdmins } from '@/apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
 
 import {
@@ -56,7 +58,6 @@ function AdminView() {
         const accessToken = await getAccessTokenSilently();
         const outPutRoles = getUsersRole(user, accessToken);
         setRoles(outPutRoles);
-        console.log(outPutRoles);
         const permission = isAdmin(outPutRoles);
         permission ? setCanEnter(true) : navigate("/");
       } catch (error) {
@@ -86,10 +87,8 @@ function AdminView() {
     const fetchPhysicians = async () => {
       try {
         setIsLoadingPhysicians(true);
-        const token = await getAccessTokenSilently();
-        const response = await fetch("/physician/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // const token = await getAccessTokenSilently();
+        const response = await getPhysicians()
 
         if (!response.ok) throw new Error("Failed to fetch physicians");
 
@@ -121,10 +120,8 @@ function AdminView() {
     const fetchAdmins = async () => {
       try {
         setIsLoadingAdmins(true);
-        const token = await getAccessTokenSilently();
-        const response = await fetch("/admins/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // const token = await getAccessTokenSilently();
+        const response = await getAdmins()
 
         if (!response.ok) throw new Error("Failed to fetch admins");
 
@@ -165,19 +162,12 @@ function AdminView() {
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = await getAccessTokenSilently();
-      const response = await fetch("/physicians/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          first_name: inviteFirstName,
-          last_name: inviteLastName,
-          email_address: inviteEmail,
-        }),
-      });
+      const physicianData = {
+        first_name: inviteFirstName,
+        last_name: inviteLastName,
+        email_address: inviteEmail,
+      }
+      const response = await createPhysician(physicianData);
 
       const responseText = await response.text();
 
@@ -233,11 +223,7 @@ function AdminView() {
       return;
 
     try {
-      const token = await getAccessTokenSilently();
-      const response = await fetch(`/physicians/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await deletePhysicianByID(id)
 
       if (!response.ok) {
         const errorData = await response.json();

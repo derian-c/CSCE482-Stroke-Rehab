@@ -87,8 +87,8 @@ function AdminView() {
     const fetchPhysicians = async () => {
       try {
         setIsLoadingPhysicians(true);
-        // const token = await getAccessTokenSilently();
-        const response = await getPhysicians()
+        const token = await getAccessTokenSilently();
+        const response = await getPhysicians(token)
 
         if (!response.ok) throw new Error("Failed to fetch physicians");
 
@@ -120,8 +120,8 @@ function AdminView() {
     const fetchAdmins = async () => {
       try {
         setIsLoadingAdmins(true);
-        // const token = await getAccessTokenSilently();
-        const response = await getAdmins()
+        const token = await getAccessTokenSilently();
+        const response = await getAdmins(token)
 
         if (!response.ok) throw new Error("Failed to fetch admins");
 
@@ -167,7 +167,8 @@ function AdminView() {
         last_name: inviteLastName,
         email_address: inviteEmail,
       }
-      const response = await createPhysician(physicianData);
+      const token = await getAccessTokenSilently()
+      const response = await createPhysician(physicianData,token);
 
       const responseText = await response.text();
 
@@ -223,7 +224,8 @@ function AdminView() {
       return;
 
     try {
-      const response = await deletePhysicianByID(id)
+      const token = await getAccessTokenSilently()
+      const response = await deletePhysicianByID(id,token)
 
       if (!response.ok) {
         const errorData = await response.json();

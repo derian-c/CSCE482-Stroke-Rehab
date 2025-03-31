@@ -3,17 +3,20 @@ from sqlalchemy import null
 from extensions import db
 from models.device import Device
 from models.patient import Patient
+from auth import requires_auth
 
 devices = Blueprint('devices', __name__, url_prefix='/devices')
 
 # Get all devices
 @devices.route('/', methods=['GET'])
+@requires_auth
 def get_devices():
   devices = db.session.execute(db.select(Device)).scalars()
   return jsonify([device.dict() for device in devices])
 
 # Get device by id
 @devices.route('/<int:id>', methods=['GET'])
+@requires_auth
 def get_device(id):
   device = db.session.get(Device, id)
   if device:
@@ -22,6 +25,7 @@ def get_device(id):
 
 # Create a new device
 @devices.route('/', methods=['POST'])
+@requires_auth
 def create_device():
   # Create an unassigned device
   device = Device()
@@ -31,6 +35,7 @@ def create_device():
 
 # Assign device to a patient
 @devices.route('/<int:id>/assign', methods=['PUT'])
+@requires_auth
 def assign_device(id):
   device = db.session.get(Device, id)
   if not device:
@@ -65,6 +70,7 @@ def assign_device(id):
 
 # Delete device
 @devices.route('/<int:id>', methods=['DELETE'])
+@requires_auth
 def delete_device(id):
   device = db.session.get(Device, id)
   if not device:
@@ -76,6 +82,7 @@ def delete_device(id):
 
 # Get device for a patient
 @devices.route('/patient/<int:patient_id>', methods=['GET'])
+@requires_auth
 def get_patient_device(patient_id):
   assignment = db.session.query(Device).filter_by(patient_id=patient_id).one()
   if assignment:
@@ -84,6 +91,7 @@ def get_patient_device(patient_id):
 
 # Get all unassigned devices
 @devices.route('/unassigned', methods=['GET'])
+@requires_auth
 def get_unassigned_devices():
   # Get devices that don't have a patient assignment
   unassigned_devices = []

@@ -52,7 +52,6 @@ export async function deletePhysicianByID(id, token){
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Authorization': 'Bearer '+token
-    },
-    body: JSON.stringify(physicianData)
+    }
   })
 }

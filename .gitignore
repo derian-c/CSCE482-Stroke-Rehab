@@ -7,3 +7,6 @@ backend/venv
 
 #ignore backend coverage file
 backend/.coverage
+
+#ignore mac files
+.DS_Store

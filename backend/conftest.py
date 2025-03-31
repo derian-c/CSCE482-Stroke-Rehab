@@ -1,5 +1,6 @@
 import pytest
 import os
+import requests
 from dotenv import load_dotenv
 from extensions import db
 from app_setup import create_app
@@ -48,3 +49,20 @@ def populate_database(app):
     db.session.query(Admin).delete()
     db.session.execute(db.text('TRUNCATE TABLE patients,physicians,admins,chats,chat_messages RESTART IDENTITY;'))
     db.session.commit()
+
+@pytest.fixture(scope='session')
+def access_token():
+  load_dotenv()
+  AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN')
+  API_AUDIENCE = os.environ.get('API_AUDIENCE')
+  AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID')
+  EMAIL = os.environ.get('TEST_USER_EMAIL')
+  PASSWORD = os.environ.get('TEST_USER_PASSWORD')
+  data = {
+    'grant_type': 'password',
+    'username': EMAIL,
+    'password': PASSWORD,
+    'client_id': AUTH0_CLIENT_ID,
+    'audience': API_AUDIENCE
+  }
+  return requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',data=data).json().get('access_token')

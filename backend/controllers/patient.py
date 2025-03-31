@@ -4,17 +4,20 @@ from models.physician import Physician
 from models.patient import Patient
 from models.chat import Chat
 from models.chat_message import ChatMessage
+from auth import requires_auth
 
 patients = Blueprint('patients', __name__, url_prefix='/patients')
 
 # Get info for all patients
 @patients.route('/', methods=['GET'])
+@requires_auth
 def get_patients():
   patients = db.session.execute(db.select(Patient)).scalars()
   return jsonify([patient.dict() for patient in patients])
 
 # Get info for one patient by id
 @patients.route('/<int:id>', methods=['GET'])
+@requires_auth
 def get_patient(id):
   patient = db.session.get(Patient, id)
   if patient:
@@ -23,6 +26,7 @@ def get_patient(id):
 
 # Update info for one patient by id
 @patients.route('/<int:id>', methods=['PUT'])
+@requires_auth
 def update_patient(id):
   patient = db.session.get(Patient, id)
   if patient:
@@ -37,6 +41,7 @@ def update_patient(id):
 
 # Create a patient with a name, email address, and physician name
 @patients.route('/', methods=['POST'])
+@requires_auth
 def create_patient():
   data = request.get_json()
   first_name = data.get('first_name')
@@ -61,6 +66,7 @@ def create_patient():
 
 # Delete patient by id
 @patients.route('/<int:id>', methods=['DELETE'])
+@requires_auth
 def delete_patient(id):
   patient = db.session.get(Patient, id)
   if patient:

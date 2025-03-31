@@ -9,6 +9,7 @@ from models.physician import Physician
 from models.admin import Admin
 from models.chat import Chat
 from models.chat_message import ChatMessage
+from models.device import Device
 
 @pytest.fixture(scope='module')
 def app():
@@ -42,12 +43,13 @@ def populate_database(app):
     db.session.commit()
   yield
   with app.app_context():
+    db.session.query(Device).delete()
     db.session.query(ChatMessage).delete()
     db.session.query(Chat).delete()
     db.session.query(Patient).delete()
     db.session.query(Physician).delete()
     db.session.query(Admin).delete()
-    db.session.execute(db.text('TRUNCATE TABLE patients,physicians,admins,chats,chat_messages RESTART IDENTITY;'))
+    db.session.execute(db.text('TRUNCATE TABLE patients,physicians,admins,chats,chat_messages,devices RESTART IDENTITY;'))
     db.session.commit()
 
 @pytest.fixture(scope='session')

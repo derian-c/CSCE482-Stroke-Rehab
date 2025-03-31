@@ -5,7 +5,6 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from typing import Optional
 from models.base import Base
-from models.patient import Patient
 
 class Device(Base):
   __tablename__ = 'devices'
@@ -14,7 +13,7 @@ class Device(Base):
   # Add any device-specific fields here
   
   patient_id = Column(Integer, ForeignKey('patients.id'), nullable=True, unique=True)
-  patient = relationship("Patient", back_populates="device")
+  patient: = relationship("Patient", back_populates="device")
   
   def __repr__(self) -> str:
     return f'Device({self.dict()})'

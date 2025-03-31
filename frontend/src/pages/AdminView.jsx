@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getPhysicians, createPhysician, deletePhysicianByID } from '@/apis/physicianService'
 import { getAdmins } from '@/apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
+import { DeviceManagement } from "../components/DeviceManagement";
 
 import {
   UserPlus,
@@ -23,6 +24,7 @@ import {
   Lock,
   Save,
   Activity,
+  MonitorSmartphone,
 } from "lucide-react";
 
 function AdminView() {
@@ -168,7 +170,7 @@ function AdminView() {
         email_address: inviteEmail,
       }
       const token = await getAccessTokenSilently()
-      const response = await createPhysician(physicianData,token);
+      const response = await createPhysician(physicianData, token);
 
       const responseText = await response.text();
 
@@ -225,7 +227,7 @@ function AdminView() {
 
     try {
       const token = await getAccessTokenSilently()
-      const response = await deletePhysicianByID(id,token)
+      const response = await deletePhysicianByID(id, token)
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -270,9 +272,8 @@ function AdminView() {
     const newActivityLog = {
       id: activityLog.length + 1,
       user: user?.name || "Admin",
-      action: `${
-        hasPermission ? "Removed" : "Added"
-      } ${permission} permission for ${physician.name}`,
+      action: `${hasPermission ? "Removed" : "Added"
+        } ${permission} permission for ${physician.name}`,
       timestamp: new Date().toISOString(),
     };
 
@@ -309,11 +310,10 @@ function AdminView() {
   const TabButton = ({ tab, icon, label }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
-        activeTab === tab
-          ? "text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-500 hover:text-gray-700"
-      }`}
+      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${activeTab === tab
+        ? "text-blue-600 border-b-2 border-blue-600"
+        : "text-gray-500 hover:text-gray-700"
+        }`}
     >
       {React.createElement(icon, { className: "h-4 w-4 mr-1" })}
       {label}
@@ -372,6 +372,11 @@ function AdminView() {
                 tab="activity"
                 icon={ClipboardList}
                 label="Activity Log"
+              />
+              <TabButton
+                tab="deviceManagement"
+                icon={MonitorSmartphone}
+                label="Device Management"
               />
               <TabButton tab="settings" icon={Settings} label="Page Settings" />
             </nav>
@@ -691,6 +696,11 @@ function AdminView() {
               </div>
             )}
 
+            {/* Device Management Tab */}
+            {activeTab === "deviceManagement" && (
+              <DeviceManagement />
+            )}
+
             {/* Settings Tab */}
             {activeTab === "settings" && (
               <div className="w-full">
@@ -723,18 +733,16 @@ function AdminView() {
                               }
                             />
                             <div
-                              className={`block w-10 h-6 rounded-full ${
-                                settings.enableNotifications
-                                  ? "bg-blue-600"
-                                  : "bg-gray-400"
-                              }`}
+                              className={`block w-10 h-6 rounded-full ${settings.enableNotifications
+                                ? "bg-blue-600"
+                                : "bg-gray-400"
+                                }`}
                             ></div>
                             <div
-                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                                settings.enableNotifications
-                                  ? "transform translate-x-4"
-                                  : ""
-                              }`}
+                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.enableNotifications
+                                ? "transform translate-x-4"
+                                : ""
+                                }`}
                             ></div>
                           </div>
                           <div className="ml-3 text-gray-700">
@@ -761,18 +769,16 @@ function AdminView() {
                               }
                             />
                             <div
-                              className={`block w-10 h-6 rounded-full ${
-                                settings.darkMode
-                                  ? "bg-blue-600"
-                                  : "bg-gray-400"
-                              }`}
+                              className={`block w-10 h-6 rounded-full ${settings.darkMode
+                                ? "bg-blue-600"
+                                : "bg-gray-400"
+                                }`}
                             ></div>
                             <div
-                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                                settings.darkMode
-                                  ? "transform translate-x-4"
-                                  : ""
-                              }`}
+                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.darkMode
+                                ? "transform translate-x-4"
+                                : ""
+                                }`}
                             ></div>
                           </div>
                           <div className="ml-3 text-gray-700">Dark mode</div>

@@ -44,9 +44,8 @@ export async function deletePhysicianByID(id){
   return fetch(`${BACKEND_URL}/physicians/${id}`,{
     method: 'DELETE',
     headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(physicianData)
+      'Accept': 'application/json'
+    }
+    //got rid of body
   })
 }

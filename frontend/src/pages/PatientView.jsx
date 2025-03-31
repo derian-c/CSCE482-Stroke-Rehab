@@ -23,7 +23,7 @@ import { socket } from '@/socket';
 import AccessibilityMenu from '../components/AccessibilityMenu';
 
 const PatientView = () => {
-  const { user, logout } = useAuth0();
+  const { user, logout, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -101,7 +101,8 @@ const PatientView = () => {
     const fetchMessages = async () => {
       try {
         // get messages here
-        const response = await getMessages({'patient_id':1,'physician_id':1})
+        const token = await getAccessTokenSilently()
+        const response = await getMessages({'patient_id':1,'physician_id':1},token)
         const data = await response.json()
         if(response.ok){
           setMessages(data);

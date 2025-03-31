@@ -5,8 +5,5 @@ __pycache__*
 #ignore python venv
 backend/venv
 
-#ignore seed file
-backend/seed.py
-
 #ignore backend coverage file
 backend/.coverage

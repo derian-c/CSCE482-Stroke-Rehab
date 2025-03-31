@@ -21,7 +21,7 @@ import { socket } from '@/socket'
 import { getMessages } from '@/apis/messagesService'
 
 const PhysicianView = () => {
-  const { user, logout } = useAuth0();
+  const { user, logout, getAccessTokenSilently } = useAuth0();
   const [patients, setPatients] = useState([
     {
       id: 0,
@@ -216,7 +216,8 @@ const PhysicianView = () => {
 
   useEffect(() => {
     async function loadPatients() {
-      const response = await getPatients();
+      const token = await getAccessTokenSilently()
+      const response = await getPatients(token);
       if(response.ok){
         const _patients = await response.json();
         let patientsCopy = [...patients];
@@ -227,7 +228,7 @@ const PhysicianView = () => {
           
           // fetch patient messages
           try {
-            const response = await getMessages({'physician_id':1, 'patient_id':patientsCopy[i].id});
+            const response = await getMessages({'physician_id':1, 'patient_id':patientsCopy[i].id},token);
             const data = await response.json()
             patientsCopy[i].messages = data;
             

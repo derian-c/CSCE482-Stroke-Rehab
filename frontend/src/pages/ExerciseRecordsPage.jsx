@@ -216,8 +216,7 @@ const ExerciseRecordsPage = () => {
                 <div className="text-center">
                   <File className="h-16 w-16 text-blue-600 mx-auto mb-4" />
                   <p className="text-gray-700 mb-4">
-                    This is a placeholder for the PDF viewer. In a real application, 
-                    you would see the actual PDF document here.
+                    This is a placeholder for the PDF viewer.
                   </p>
                   <p className="text-gray-500 text-sm">
                     File: {viewingFile.name}<br/>

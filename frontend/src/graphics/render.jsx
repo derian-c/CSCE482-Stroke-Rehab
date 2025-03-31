@@ -8,7 +8,7 @@ const PatientModel = () => {
   const isRendered = useRef(false);
 
   useEffect(() => {
-    if(isRendered.current) return;
+    if (isRendered.current) return;
     isRendered.current = true;
     //Create a New Scene to render
     const scene = new THREE.Scene();
@@ -74,12 +74,11 @@ const PatientModel = () => {
     spotLight.castShadow = true;
     scene.add(spotLight);
 
-    //Load model (Note: Models must be in public folder)
     const loader = new GLTFLoader().setPath("/Models");
+    let mixer;
     loader.load(
-      "/RajagopalLaiUhlrich2023.gltf",
+      "/noSphereModel.glb",
       (gltf) => {
-        console.log("loading model");
         const mesh = gltf.scene;
         mesh.scale.set(3, 3, 3);
         //Some models are broken into multiple meshes
@@ -94,6 +93,16 @@ const PatientModel = () => {
         //Translates entire models initial position
         mesh.position.set(0, 0, 0);
         scene.add(mesh);
+
+        mixer = new THREE.AnimationMixer(mesh);
+        gltf.animations.forEach((clip) => {
+          mixer.clipAction(clip).play();
+        });
+      },
+      (xhr) => {
+        // Shows loading percentage
+        const progress = (xhr.loaded / xhr.total) * 100;
+        console.log(`Loading: ${progress.toFixed(2)}%`);
       },
       (error) => {
         console.error(error);
@@ -110,6 +119,10 @@ const PatientModel = () => {
     //Actually render the scene
     function animate() {
       requestAnimationFrame(animate);
+      //Updates keyframe for animation
+      if (mixer) {
+        mixer.update(0.01);
+      }
       controls.update();
       renderer.render(scene, camera);
     }

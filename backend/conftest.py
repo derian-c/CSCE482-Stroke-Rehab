@@ -1,16 +1,18 @@
 import pytest
 import os
+import requests
 from dotenv import load_dotenv
 from extensions import db
 from app_setup import create_app
 from models.patient import Patient
 from models.physician import Physician
+from models.admin import Admin
+from models.chat import Chat
+from models.chat_message import ChatMessage
 
 @pytest.fixture(scope='module')
 def app():
   app = create_app()
-  if not app.config['SQLALCHEMY_DATABASE_URI']:
-    raise ValueError("The TEST_DATABASE_URL environment variable is not set.")
 
   with app.app_context():
     db.create_all()
@@ -24,24 +26,43 @@ def app():
 def client(app):
   return app.test_client()
 
-# @pytest.fixture(scope='module')
-# def dtb(app):
-#   with app.app_context():
-#     db.init_app(app)
-#     yield db
-
 @pytest.fixture(scope='function')
 def populate_database(app):
   with app.app_context():
-    physician = Physician(name='Test Physician',email_address='test@test.com')
+    physician = Physician(first_name='Test',last_name='Physician',email_address='test@test.com')
+    admin = Admin(first_name='Test',last_name='Admin',email_address='test@test.com')
     db.session.add(physician)
-    db.session.commit()
-    patient = Patient(name='Test Patient',email_address='test@test.com',physician_id=1)
+    db.session.add(admin)
+    patient = Patient(first_name='Test',last_name='Patient',email_address='test@test.com',physician_id=1)
     db.session.add(patient)
+    chat = Chat(patient_id=1,physician_id=1)
+    db.session.add(chat)
+    chat_message = ChatMessage(chat_id=1,sender=0,content='content')
+    db.session.add(chat_message)
     db.session.commit()
   yield
   with app.app_context():
+    db.session.query(ChatMessage).delete()
+    db.session.query(Chat).delete()
     db.session.query(Patient).delete()
     db.session.query(Physician).delete()
-    db.session.execute(db.text('TRUNCATE TABLE patients,physicians RESTART IDENTITY;'))
+    db.session.query(Admin).delete()
+    db.session.execute(db.text('TRUNCATE TABLE patients,physicians,admins,chats,chat_messages RESTART IDENTITY;'))
     db.session.commit()
+
+@pytest.fixture(scope='session')
+def access_token():
+  load_dotenv()
+  AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN')
+  API_AUDIENCE = os.environ.get('API_AUDIENCE')
+  AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID')
+  EMAIL = os.environ.get('TEST_USER_EMAIL')
+  PASSWORD = os.environ.get('TEST_USER_PASSWORD')
+  data = {
+    'grant_type': 'password',
+    'username': EMAIL,
+    'password': PASSWORD,
+    'client_id': AUTH0_CLIENT_ID,
+    'audience': API_AUDIENCE
+  }
+  return requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',data=data).json().get('access_token')

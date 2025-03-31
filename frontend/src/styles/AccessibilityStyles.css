@@ -1,0 +1,105 @@
+/* accessibilityStyles.css - Simplified Accessibility Styles */
+
+/* Font Size Classes - These target specific elements */
+body.text-size-small {
+	font-size: 14px;
+  }
+  
+  body.text-size-medium {
+	font-size: 16px;
+  }
+  
+  body.text-size-large {
+	font-size: 18px;
+  }
+  
+  body.text-size-xlarge {
+	font-size: 20px;
+  }
+  
+  /* Skip to content link - hidden until focused */
+  .skip-to-content {
+	position: absolute;
+	left: 0;
+	top: -9999px;
+	background: #3B82F6;
+	color: white;
+	padding: 8px;
+	z-index: 100;
+	transition: top 0.3s;
+  }
+  
+  .skip-to-content:focus {
+	top: 0;
+  }
+  
+  /* Focus styles for accessibility */
+  *:focus-visible {
+	outline: 3px solid #3B82F6 !important;
+	outline-offset: 2px !important;
+  }
+  
+  /* Style for the dot in toggle switches */
+  .dot {
+	transition: transform 0.3s ease;
+  }
+  
+  /* Keep accessibility menu controls manageable regardless of font size */
+  .accessibility-menu-controls {
+	font-size: 16px !important;
+  }
+  
+  .accessibility-menu-controls h2 {
+	font-size: 1.25rem !important;
+  }
+  
+  .accessibility-menu-controls h3 {
+	font-size: 1rem !important;
+  }
+  
+  .accessibility-menu-controls button {
+	font-size: 0.875rem !important;
+  }
+  
+  /* Ensure the accessibility button stays a reasonable size */
+  .accessibility-button {
+	font-size: 1rem !important;
+  }
+  
+  /* Transitions for smooth theme changes */
+  body, button, a, input, textarea, div {
+	transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  /* Colorblind CSS helper classes */
+  .colorblind-blue {
+	color: #0072B2 !important;
+  }
+  .colorblind-orange {
+	color: #E69F00 !important;
+  }
+  .colorblind-dark-orange {
+	color: #B25000 !important;
+  }
+  .colorblind-bg-blue {
+	background-color: #0072B2 !important;
+  }
+  .colorblind-bg-orange {
+	background-color: #E69F00 !important;
+  }
+  .colorblind-bg-light-orange {
+	background-color: #FFF0D9 !important;
+  }
+  .colorblind-border-orange {
+	border-color: #E69F00 !important;
+	border-width: 2px !important;
+  }
+  
+  /* High Contrast CSS helper classes */
+  .high-contrast-inverse {
+	background-color: white !important;
+	color: black !important;
+  }
+  .high-contrast-border {
+	border: 2px solid white !important;
+  }

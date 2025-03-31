@@ -10,6 +10,7 @@ from models.physician import Physician
 from models.admin import Admin
 from models.chat import Chat
 from models.chat_message import ChatMessage
+from models.device import Device
 from auth import requires_auth, AuthError
 from talisman import Talisman
 
@@ -37,6 +38,9 @@ app.register_blueprint(admins)
 
 from controllers.chat_message import chat_messages
 app.register_blueprint(chat_messages)
+
+from controllers.device import devices
+app.register_blueprint(devices)
 
 sock = SocketIO(app, cors_allowed_origins=frontend_url)
 

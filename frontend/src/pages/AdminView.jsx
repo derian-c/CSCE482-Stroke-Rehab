@@ -384,7 +384,6 @@ function AdminView() {
               <div className="w-full">
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
                   <UserPlus className="h-5 w-5 mr-2 text-blue-600" />
-                  Add New Physician
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Add a new physician to the system.

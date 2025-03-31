@@ -47,7 +47,7 @@ function App() {
         <Route 
           path="/provider"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute  allowedRole='Admin'>
               <ProviderView />
             </ProtectedRoute>
           }

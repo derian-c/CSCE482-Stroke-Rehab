@@ -16,7 +16,7 @@ def get_motion_files():
   return jsonify([motion_file.dict() for motion_file in motion_files])
 
 # Get motion_file by id
-@motion_files.route('/<int:id>', methods=['GET'])
+@motion_files.route('<int:id>', methods=['GET'])
 @requires_auth
 def get_motion_file(id):
   motion_file = db.session.get(Motion_File, id)
@@ -25,12 +25,12 @@ def get_motion_file(id):
   return jsonify({'error': 'Motion_File does not exist'}), 422
 
 # Create a new motion_file
-@motion_files.route('/', methods=['POST'])
+@motion_files.route('/create', methods=['POST'])
 @requires_auth
 def create_motion_file():
   request_data = request.get_json()
 
-  if not request_data or 'type' not in request_data or 'url' not in request_data or 'file_name' not in request_data or 'email' not in request_data:
+  if not request_data or 'type' not in request_data or 'url' not in request_data or 'name' not in request_data or 'email' not in request_data:
         return jsonify({'error': 'Missing required fields: url, file_name, type, and/or email'}), 400
 
   patient = db.session.query(Patient).filter_by(email=request_data['email']).first()
@@ -39,7 +39,7 @@ def create_motion_file():
 
   motion_file = Motion_File(
       url=request_data['url'],
-      file_name=request_data['file_name'],
+      name=request_data['file_name'],
       patient_id=patient.id,
       type=request_data['type']
   )
@@ -87,7 +87,7 @@ def assign_motion_file(id):
   return jsonify(motion_file.dict())
 
 # Delete motion_file
-@motion_files.route('/<int:id>', methods=['DELETE'])
+@motion_files.route('/delete/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_motion_file(id):
   motion_file = db.session.get(Motion_File, id)
@@ -104,12 +104,12 @@ def delete_motion_file(id):
 def get_patient_motion_files(patient_id):
   assignments = db.session.query(Motion_File).filter_by(patient_id=patient_id).all()
   if assignments:
-    return jsonify(assignment.dict() for assignment in assignments)
+    return jsonify([assignment.dict() for assignment in assignments])
   return jsonify({'error': 'No motion_file assigned to this patient'}), 404
 
 
 # Get motion_files for a patient after given date
-@motion_files.route('/patient/<int:patient_id>/after/<date>', methods=['GET'])
+@motion_files.route('patient/<int:patient_id>/after/<date>', methods=['GET'])
 @requires_auth
 def get_patient_motion_files_after_date(patient_id, date):
   try:
@@ -121,6 +121,3 @@ def get_patient_motion_files_after_date(patient_id, date):
 
   except ValueError:
       return jsonify({'error': 'Invalid date format. Please use YYYY-MM-DD'}), 400
-
-
-

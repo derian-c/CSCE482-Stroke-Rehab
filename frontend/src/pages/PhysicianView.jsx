@@ -448,7 +448,7 @@ const PhysicianView = () => {
                           <option value="">Select motion file</option>
                           {patientMotionFiles.map(file => (
                             <option key={file.id} value={file.id}>
-                              {file.file_name} ({file.type})
+                              {file.name} ({file.type})
                             </option>
                           ))}
                         </select>

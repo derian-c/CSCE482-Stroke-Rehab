@@ -43,6 +43,9 @@ app.register_blueprint(chat_messages)
 from controllers.device import devices
 app.register_blueprint(devices)
 
+from controllers.motion_file import motion_files
+app.register_blueprint(motion_files)
+
 sock = SocketIO(app, cors_allowed_origins=frontend_url)
 
 @sock.on('join')

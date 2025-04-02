@@ -116,7 +116,7 @@ def get_patient_motion_files_after_date(patient_id, date):
     target_date = datetime.strptime(date, '%Y-%m-%d')
     assignments = db.session.query(Motion_File).filter(Motion_File.patient_id==patient_id, Motion_File.createdAt >= target_date).all()
     if assignments:
-      return jsonify({'error': f'No motion_files found for patient {patient_id} after {date}'}), 404
+      return jsonify([assignment.dict() for assignment in assignments])
     return jsonify({'error': f'No motion_files found for patient {patient_id} after {date}'}), 404
 
   except ValueError:

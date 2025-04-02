@@ -17,6 +17,7 @@ class Patient(Base):
   chat: Mapped['Chat'] = relationship(back_populates='patient',cascade='all, delete',uselist=False)
 
   device = relationship("Device",back_populates='patient', uselist=False)
+  motion_file = relationship("Motion_File", back_populates='patient')
 
 
   def __repr__(self) -> str:

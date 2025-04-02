@@ -11,6 +11,7 @@ from models.admin import Admin
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
+from models.motion_file import Motion_File
 from auth import requires_auth, AuthError
 from talisman import Talisman
 

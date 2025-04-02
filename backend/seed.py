@@ -8,6 +8,7 @@ from models.admin import Admin
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
+from models.motion_file import Motion_File
 load_dotenv()
 
 engine = create_engine(os.environ.get('DATABASE_URL'))

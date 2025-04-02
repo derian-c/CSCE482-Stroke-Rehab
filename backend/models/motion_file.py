@@ -1,8 +1,9 @@
 from enum import unique
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import Column, ForeignKey, Integer, DateTime
 from sqlalchemy.orm import Mapped 
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from typing import Optional
 from models.base import Base
 
@@ -10,8 +11,11 @@ class Motion_File(Base):
   __tablename__ = 'motion_files'
 
   id: Mapped[int] = mapped_column(primary_key=True)
+  name: Mapped[str]
   url: Mapped[str] 
-  
+  type: Mapped[str]
+  createdAt = Column(DateTime(timezone=True), server_default=func.now())
+   
   patient_id = Column(Integer, ForeignKey('patients.id'))
   patient = relationship("Patient", back_populates="motion_file")
   

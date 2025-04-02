@@ -40,3 +40,17 @@ with Session(engine) as session:
     chat = Chat(patient_id=i,physician_id=int((i-1)/5+1))
     session.add(chat)
   session.commit()
+
+# Add test motion files for test patients
+with Session(engine) as session:
+  url="https://capstorage2025.blob.core.windows.net/motion-files/recording_4.sto"
+  for i in range(10):
+    motion_file = Motion_File(patient_id=1, type="sto", name=f"Patient1Recording{i}", url=url)
+    session.add(motion_file)
+  for i in range(4):
+    motion_file = Motion_File(patient_id=2, type="sto", name=f"Patient2Recording{i}", url=url)
+    session.add(motion_file)
+  for i in range(6):
+    motion_file = Motion_File(patient_id=3, type="sto", name=f"Patient3Recording{i}", url=url)
+    session.add(motion_file)
+  session.commit()

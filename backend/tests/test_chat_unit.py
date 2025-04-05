@@ -5,7 +5,7 @@ def test_chat_get(populate_database,app):
   with app.app_context():
     chat = db.session.get(Chat, 1)
     assert chat.physician_id == 1
-    assert chat.patient_id == 1
+    assert chat.patient_id == 3
 
 def test_chat_create(populate_database,app):
   with app.app_context():

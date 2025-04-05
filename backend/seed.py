@@ -1,10 +1,9 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from models.patient import Patient
-from models.physician import Physician
-from models.admin import Admin
+from models.user import User
+from models.patient_physician import PatientPhysician
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
@@ -15,27 +14,31 @@ engine = create_engine(os.environ.get('DATABASE_URL'))
 # Add test physicians to database
 with Session(engine) as session:
   for i in range(1,3):
-    physician = Physician(first_name="Physician",last_name=str(i),email_address="physician"+str(i)+"@test.com")
+    physician = User(first_name="Physician",last_name=str(i),email_address="physician"+str(i)+"@test.com",is_physician=True)
     session.add(physician)
   session.commit()
 
 # Add test admins to database
 with Session(engine) as session:
   for i in range(1,3):
-    admin = Admin(first_name="Admin",last_name=str(i),email_address="admin"+str(i)+"@test.com")
+    admin = User(first_name="Admin",last_name=str(i),email_address="admin"+str(i)+"@test.com",is_admin=True)
     session.add(admin)
   session.commit()
 
 # Add test patients to database
 with Session(engine) as session:
   for i in range(1, 11):
-    patient = Patient(first_name="Patient",last_name=str(i),email_address="patient"+str(i)+"@test.com",physician_id=int((i-1)/5+1))
+    patient = User(first_name="Patient",last_name=str(i),email_address="patient"+str(i)+"@test.com",is_patient=True)
     session.add(patient)
+    session.flush()
+    patient_physician = PatientPhysician(patient_id=patient.id,physician_id=int((i-1)/5+1))
+    session.add(patient_physician)
   session.commit()
 
 # Add test chats to database
 with Session(engine) as session:
-  for i in range(1,11):
-    chat = Chat(patient_id=i,physician_id=int((i-1)/5+1))
+  patient_physicians = session.scalars(select(PatientPhysician))
+  for pp in patient_physicians:
+    chat = Chat(patient_id=pp.patient_id,physician_id=pp.physician_id)
     session.add(chat)
   session.commit()

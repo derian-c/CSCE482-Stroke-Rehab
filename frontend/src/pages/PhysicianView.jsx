@@ -343,7 +343,6 @@ const PhysicianView = () => {
     return "bg-red-500";
   };
 
-  // These functions are no longer needed as we removed the range of motion bar
 
   const getJointTypeColor = (jointType) => {
     switch(jointType.toLowerCase()) {

@@ -19,11 +19,11 @@ const MotionReadingsTab = ({ selectedPatient, formatDate, getJointStatusColor })
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div className="bg-gray-50 p-2 rounded-md">
               <div className="text-xs text-gray-500">Min Angle</div>
-              <div className="font-medium">{readings.min}°</div>
+              <div className="font-medium text-black">{readings.min}°</div>
             </div>
             <div className="bg-gray-50 p-2 rounded-md">
               <div className="text-xs text-gray-500">Max Angle</div>
-              <div className="font-medium">{readings.max}°</div>
+              <div className="font-medium text-black">{readings.max}°</div>
             </div>
           </div>
         </div>

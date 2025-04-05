@@ -1,9 +1,8 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
-from models.physician import Physician
-from models.patient import Patient
+from models.user import User
+from models.patient_physician import PatientPhysician
 from models.chat import Chat
-from models.chat_message import ChatMessage
 from auth import requires_auth
 
 patients = Blueprint('patients', __name__, url_prefix='/patients')
@@ -12,15 +11,16 @@ patients = Blueprint('patients', __name__, url_prefix='/patients')
 @patients.route('/', methods=['GET'])
 @requires_auth
 def get_patients():
-  patients = db.session.execute(db.select(Patient)).scalars()
+  patients = db.session.scalars(db.select(User).filter_by(is_patient=True))
   return jsonify([patient.dict() for patient in patients])
 
 # Get info for one patient by id
 @patients.route('/<int:id>', methods=['GET'])
 @requires_auth
 def get_patient(id):
-  patient = db.session.get(Patient, id)
-  if patient:
+  patient = db.session.get(User, id)
+  # User must exist and be a patient
+  if patient and patient.is_patient:
     return jsonify(patient.dict())
   return jsonify({'error': 'Patient does not exist'}), 422
 
@@ -28,18 +28,17 @@ def get_patient(id):
 @patients.route('/<int:id>', methods=['PUT'])
 @requires_auth
 def update_patient(id):
-  patient = db.session.get(Patient, id)
-  if patient:
+  patient = db.session.get(User, id)
+  if patient and patient.is_patient:
     data = request.get_json()
-    patient.first_name = data.get('first_name')
-    patient.last_name = data.get('last_name')
-    patient.email_address = data.get('email_address')
-    patient.physician_id = data.get('physician_id')
+    # Update patient using keys and values from json
+    for key, value in data.items():
+        setattr(patient, key, value)
     db.session.commit()
     return jsonify(patient.dict())
   return jsonify({'error': 'Patient does not exist'}), 422
 
-# Create a patient with a name, email address, and physician name
+# Create a patient with a name, email address, and physician id
 @patients.route('/', methods=['POST'])
 @requires_auth
 def create_patient():
@@ -47,20 +46,25 @@ def create_patient():
   first_name = data.get('first_name')
   last_name = data.get('last_name')
   email_address = data.get('email_address')
-  physician_first_name = data.get('physician_first_name')
-  physician_last_name = data.get('physician_last_name')
-  patient = db.session.scalars(db.select(Patient).filter_by(first_name=first_name,last_name=last_name,email_address=email_address)).first()
+  physician_id = data.get('physician_id')
+  # Try to find patient
+  patient = db.session.scalars(db.select(User).filter_by(email_address=email_address)).first()
   if patient:
-    return jsonify({'error': 'Patient already exists'}), 422
-  patient = Patient(first_name=first_name,last_name=last_name,email_address=email_address)
-  physician = db.session.scalars(db.select(Physician).filter_by(first_name=physician_first_name,last_name=physician_last_name)).first()
-  if not physician:
-    return jsonify({'error': 'Physician does not exist'}), 422
-  patient.physician_id = physician.id
+    if patient.is_patient:
+      return jsonify({'error': 'Patient already exists'}), 422
+    return jsonify({'error': 'User already exists'}), 422
+  patient = User(first_name=first_name,last_name=last_name,email_address=email_address,is_patient=True)
   db.session.add(patient)
   db.session.commit()
+  # Try to find the physician
+  physician = db.session.get(User, physician_id)
+  if not physician or not physician.is_physician:
+    return jsonify({'error': 'Physician does not exist'}), 422
+  # Create dependent models
+  patient_physician = PatientPhysician(patient_id=patient.id,physician_id=physician.id)
   chat = Chat(patient_id=patient.id,physician_id=physician.id)
   db.session.add(chat)
+  db.session.add(patient_physician)
   db.session.commit()
   return jsonify(patient.dict())
 
@@ -68,8 +72,10 @@ def create_patient():
 @patients.route('/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_patient(id):
-  patient = db.session.get(Patient, id)
-  if patient:
+  patient = db.session.get(User, id)
+  # Patient has to exist
+  if patient and patient.is_patient:
+    db.session.execute(db.delete(PatientPhysician).filter_by(patient_id=id))
     db.session.delete(patient)
     db.session.commit()
     return jsonify({'message': 'Patient deleted successfully'})

@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import null
 from extensions import db
 from models.device import Device
-from models.patient import Patient
+from models.user import User
 from auth import requires_auth
 
 devices = Blueprint('devices', __name__, url_prefix='/devices')
@@ -44,19 +44,20 @@ def assign_device(id):
   data = request.get_json()
   patient_id = data.get('patient_id')
   
-  # First, remove any existing assignment for this device
-  if device.patient:
-    db.session.delete(device.patient)
-    db.session.flush()
+  # # First, remove any existing assignment for this device
+  # if device.patient:
+  #   db.session.delete(device.patient)
+  #   db.session.flush()
   
   # If patient_id is None, we're just unassigning the device
   if patient_id is None:
+    db.patient_id = None
     db.session.commit()
     return jsonify(device.dict())
   
   # Check if patient exists
-  patient = db.session.get(Patient, patient_id)
-  if not patient:
+  patient = db.session.get(User, patient_id)
+  if not patient or not patient.is_patient:
     return jsonify({'error': 'Patient does not exist'}), 422
   
   # Check if patient already has a device

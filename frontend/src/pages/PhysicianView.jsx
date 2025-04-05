@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getPatients } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -35,7 +35,69 @@ const PhysicianView = () => {
         wrist: "Improved flexibility",
         knee: "Normal range of motion",
       },
-      messages: [] // will be populated from API
+      messages: [],
+      jointReadings: {
+        shoulder: {
+          min: 10,
+          max: 160,
+          normal: { min: 0, max: 180 },
+          lastUpdated: "2025-02-15T14:30:00",
+          notes: "Showing improvement, continue current regimen"
+        },
+        elbow: {
+          min: 15,
+          max: 145,
+          normal: { min: 0, max: 150 },
+          lastUpdated: "2025-02-15T14:35:00",
+          notes: "Limited extension, focus on stretching exercises"
+        },
+        wrist: {
+          min: 5,
+          max: 70,
+          normal: { min: 0, max: 80 },
+          lastUpdated: "2025-02-14T10:15:00",
+          notes: "Flexibility improving with therapy"
+        },
+        knee: {
+          min: 0,
+          max: 130,
+          normal: { min: 0, max: 135 },
+          lastUpdated: "2025-02-15T14:40:00",
+          notes: "Normal range of motion achieved"
+        }
+      },
+      motionFiles: [
+        {
+          id: "m001",
+          jointType: "shoulder",
+          uploadDate: "2025-02-15T14:30:00",
+          filename: "shoulder_motion_20250215.csv"
+        },
+        {
+          id: "m002",
+          jointType: "elbow",
+          uploadDate: "2025-02-15T14:35:00",
+          filename: "elbow_motion_20250215.csv"
+        },
+        {
+          id: "m003",
+          jointType: "wrist",
+          uploadDate: "2025-02-14T10:15:00",
+          filename: "wrist_motion_20250214.csv"
+        },
+        {
+          id: "m004",
+          jointType: "knee",
+          uploadDate: "2025-02-15T14:40:00",
+          filename: "knee_motion_20250215.csv"
+        },
+        {
+          id: "m005",
+          jointType: "shoulder",
+          uploadDate: "2025-02-10T11:20:00",
+          filename: "shoulder_motion_20250210.csv"
+        }
+      ]
     },
     {
       id: 1,
@@ -48,7 +110,63 @@ const PhysicianView = () => {
         wrist: "Needs attention",
         knee: "Strong improvement",
       },
-      messages: [] // will be populated from API
+      messages: [],
+      jointReadings: {
+        shoulder: {
+          min: 30,
+          max: 110,
+          normal: { min: 0, max: 180 },
+          lastUpdated: "2025-02-14T13:20:00",
+          notes: "Restricted movement, continue gentle stretches"
+        },
+        elbow: {
+          min: 10,
+          max: 135,
+          normal: { min: 0, max: 150 },
+          lastUpdated: "2025-02-14T13:25:00",
+          notes: "Good progress with assisted exercises"
+        },
+        wrist: {
+          min: 15,
+          max: 40,
+          normal: { min: 0, max: 80 },
+          lastUpdated: "2025-02-14T13:30:00",
+          notes: "Limited range, needs focused attention"
+        },
+        knee: {
+          min: 5,
+          max: 125,
+          normal: { min: 0, max: 135 },
+          lastUpdated: "2025-02-14T13:35:00",
+          notes: "Strong improvement after therapy"
+        }
+      },
+      motionFiles: [
+        {
+          id: "m006",
+          jointType: "shoulder",
+          uploadDate: "2025-02-14T13:20:00",
+          filename: "shoulder_motion_20250214.csv"
+        },
+        {
+          id: "m007",
+          jointType: "elbow",
+          uploadDate: "2025-02-14T13:25:00",
+          filename: "elbow_motion_20250214.csv"
+        },
+        {
+          id: "m008",
+          jointType: "wrist",
+          uploadDate: "2025-02-14T13:30:00",
+          filename: "wrist_motion_20250214.csv"
+        },
+        {
+          id: "m009",
+          jointType: "knee",
+          uploadDate: "2025-02-14T13:35:00",
+          filename: "knee_motion_20250214.csv"
+        }
+      ]
     },
   ]);
 
@@ -65,6 +183,7 @@ const PhysicianView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("model"); // Options: "model", "messages"
+  const [jointTab, setJointTab] = useState("readings");
   const selectedPatientRef = useRef();
   const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
 
@@ -208,6 +327,37 @@ const PhysicianView = () => {
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString();
+  };
+
+  // Helper functions for joint analysis
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const getJointStatusColor = (readings) => {
+    const range = readings.max - readings.min;
+    const normalRange = readings.normal.max - readings.normal.min;
+    const percentage = (range / normalRange) * 100;
+    
+    if (percentage >= 90) return "bg-green-500";
+    if (percentage >= 70) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+
+  const getJointTypeColor = (jointType) => {
+    switch(jointType.toLowerCase()) {
+      case 'shoulder': return 'bg-blue-600';
+      case 'elbow': return 'bg-green-600';
+      case 'wrist': return 'bg-purple-600';
+      case 'knee': return 'bg-amber-600';
+      default: return 'bg-gray-600';
+    }
+  };
+
+  const handleViewFile = (file) => {
+    console.log("Opening file:", file);
   };
 
   // Check for unread messages for a specific patient
@@ -464,19 +614,56 @@ const PhysicianView = () => {
                         <BarChart className="h-5 w-5 mr-2 text-blue-600" />
                         Joint Analysis
                       </h3>
-                      <div className="space-y-4">
-                        {Object.entries(selectedPatient.exerciseQuality).map(
-                          ([joint, quality]) => (
-                            <div key={joint} className="border-b pb-3">
-                              <div className="font-medium text-gray-900 capitalize flex items-center">
-                                <span className={`h-2 w-2 rounded-full mr-2 ${getQualityColor(quality).replace('text-', 'bg-')}`}></span>
-                                {joint}
-                              </div>
-                              <div className={`text-sm mt-1 ${getQualityColor(quality)}`}>{quality}</div>
-                            </div>
-                          )
-                        )}
+                      
+                      <div className="mb-4 border-b">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setJointTab("readings")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "readings" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            Motion Readings
+                          </button>
+                          <button
+                            onClick={() => setJointTab("files")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "files" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Motion Files
+                          </button>
+                        </div>
                       </div>
+                      
+                      {jointTab === "readings" && (
+                        <MotionReadingsTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          getJointStatusColor={getJointStatusColor}
+                        />
+                      )}
+                      
+                      {jointTab === "files" && (
+                        <MotionFilesTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          handleViewFile={handleViewFile}
+                        />
+                      )}
+                            
+                            {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
+                              <div className="text-center py-8 text-gray-500">
+                                <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                                <p>No motion files available</p>
+                              </div>
+                            )}
                     </div>
                   </div>
                 </>

@@ -12,8 +12,8 @@ class Device(Base):
   id: Mapped[int] = mapped_column(primary_key=True)
   # Add any device-specific fields here
   
-  patient_id = Column(Integer, ForeignKey('patients.id'), nullable=True, unique=True)
-  patient = relationship("Patient", back_populates="device")
+  patient_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True, unique=True)
+  patient: Mapped['User'] = relationship(back_populates='device')
   
   def __repr__(self) -> str:
     return f'Device({self.dict()})'

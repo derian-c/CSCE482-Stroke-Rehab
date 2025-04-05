@@ -9,10 +9,9 @@ class Chat(Base):
   __tablename__ = 'chats'
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  physician_id: Mapped[int] = mapped_column(ForeignKey('physicians.id'))
-  patient_id: Mapped[int] = mapped_column(ForeignKey('patients.id'))
-  physician: Mapped['Physician'] = relationship(back_populates='chat')
-  patient: Mapped['Patient'] = relationship(back_populates='chat')
+  physician_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+  patient_id: Mapped[int] = mapped_column(ForeignKey('users.id'),unique=True)
+  
   chat_messages: Mapped[List['ChatMessage']] = relationship(back_populates='chat',cascade='all, delete')
 
 

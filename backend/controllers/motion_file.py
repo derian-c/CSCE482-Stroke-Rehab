@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import except_, null
 from extensions import db
 from models.motion_file import Motion_File
-from models.patient import Patient
+from models.user import User
 from auth import requires_auth
 from datetime import datetime
 
@@ -33,8 +33,8 @@ def create_motion_file():
   if not request_data or 'type' not in request_data or 'url' not in request_data or 'name' not in request_data or 'email' not in request_data:
         return jsonify({'error': 'Missing required fields: url, file_name, type, and/or email'}), 400
 
-  patient = db.session.query(Patient).filter_by(email=request_data['email']).first()
-  if not patient:
+  patient = db.session.query(User).filter_by(email=request_data['email']).first()
+  if not patient or not patient.is_patient:
         return jsonify({'error': f'No patient found with email: {request_data["email"]}'}), 404
 
   motion_file = Motion_File(
@@ -73,8 +73,8 @@ def assign_motion_file(id):
     return jsonify(motion_file.dict())
   
   # Check if patient exists
-  patient = db.session.get(Patient, patient_id)
-  if not patient:
+  patient = db.session.get(User, patient_id)
+  if not patient or not patient.is_patient:
     return jsonify({'error': 'Patient does not exist'}), 422
   
   # Check if patient already has a motion_file

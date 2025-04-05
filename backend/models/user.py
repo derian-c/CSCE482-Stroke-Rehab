@@ -36,6 +36,8 @@ class User(Base):
   
   patient_chat: Mapped['Chat'] = relationship(primaryjoin='User.id==Chat.patient_id',cascade='all, delete')
 
+  motion_file = relationship("Motion_File", back_populates='patient')
+
   device: Mapped['Device'] = relationship(back_populates='patient')
 
 

@@ -9,6 +9,7 @@ from models.chat_message import ChatMessage
 from models.device import Device
 from models.user import User
 from models.patient_physician import PatientPhysician
+from models.motion_file import Motion_File
 import controllers.messaging
 from auth import requires_auth, AuthError
 from talisman import Talisman
@@ -40,6 +41,9 @@ app.register_blueprint(chat_messages)
 
 from controllers.device import devices
 app.register_blueprint(devices)
+
+from controllers.motion_file import motion_files
+app.register_blueprint(motion_files)
 
 socket.init_app(app=app, cors_allowed_origins=frontend_url)
 

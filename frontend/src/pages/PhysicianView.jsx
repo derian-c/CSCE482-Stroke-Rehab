@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getPatients } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { socket } from '@/socket'
 import { getMessages } from '@/apis/messagesService'
+import { getMotionFiles } from "../apis/motionFileService";
 
 const PhysicianView = () => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -34,7 +35,69 @@ const PhysicianView = () => {
         wrist: "Improved flexibility",
         knee: "Normal range of motion",
       },
-      messages: [] // will be populated from API
+      messages: [],
+      jointReadings: {
+        shoulder: {
+          min: 10,
+          max: 160,
+          normal: { min: 0, max: 180 },
+          lastUpdated: "2025-02-15T14:30:00",
+          notes: "Showing improvement, continue current regimen"
+        },
+        elbow: {
+          min: 15,
+          max: 145,
+          normal: { min: 0, max: 150 },
+          lastUpdated: "2025-02-15T14:35:00",
+          notes: "Limited extension, focus on stretching exercises"
+        },
+        wrist: {
+          min: 5,
+          max: 70,
+          normal: { min: 0, max: 80 },
+          lastUpdated: "2025-02-14T10:15:00",
+          notes: "Flexibility improving with therapy"
+        },
+        knee: {
+          min: 0,
+          max: 130,
+          normal: { min: 0, max: 135 },
+          lastUpdated: "2025-02-15T14:40:00",
+          notes: "Normal range of motion achieved"
+        }
+      },
+      motionFiles: [
+        {
+          id: "m001",
+          jointType: "shoulder",
+          uploadDate: "2025-02-15T14:30:00",
+          filename: "shoulder_motion_20250215.csv"
+        },
+        {
+          id: "m002",
+          jointType: "elbow",
+          uploadDate: "2025-02-15T14:35:00",
+          filename: "elbow_motion_20250215.csv"
+        },
+        {
+          id: "m003",
+          jointType: "wrist",
+          uploadDate: "2025-02-14T10:15:00",
+          filename: "wrist_motion_20250214.csv"
+        },
+        {
+          id: "m004",
+          jointType: "knee",
+          uploadDate: "2025-02-15T14:40:00",
+          filename: "knee_motion_20250215.csv"
+        },
+        {
+          id: "m005",
+          jointType: "shoulder",
+          uploadDate: "2025-02-10T11:20:00",
+          filename: "shoulder_motion_20250210.csv"
+        }
+      ]
     },
     {
       id: 1,
@@ -47,7 +110,63 @@ const PhysicianView = () => {
         wrist: "Needs attention",
         knee: "Strong improvement",
       },
-      messages: [] // will be populated from API
+      messages: [],
+      jointReadings: {
+        shoulder: {
+          min: 30,
+          max: 110,
+          normal: { min: 0, max: 180 },
+          lastUpdated: "2025-02-14T13:20:00",
+          notes: "Restricted movement, continue gentle stretches"
+        },
+        elbow: {
+          min: 10,
+          max: 135,
+          normal: { min: 0, max: 150 },
+          lastUpdated: "2025-02-14T13:25:00",
+          notes: "Good progress with assisted exercises"
+        },
+        wrist: {
+          min: 15,
+          max: 40,
+          normal: { min: 0, max: 80 },
+          lastUpdated: "2025-02-14T13:30:00",
+          notes: "Limited range, needs focused attention"
+        },
+        knee: {
+          min: 5,
+          max: 125,
+          normal: { min: 0, max: 135 },
+          lastUpdated: "2025-02-14T13:35:00",
+          notes: "Strong improvement after therapy"
+        }
+      },
+      motionFiles: [
+        {
+          id: "m006",
+          jointType: "shoulder",
+          uploadDate: "2025-02-14T13:20:00",
+          filename: "shoulder_motion_20250214.csv"
+        },
+        {
+          id: "m007",
+          jointType: "elbow",
+          uploadDate: "2025-02-14T13:25:00",
+          filename: "elbow_motion_20250214.csv"
+        },
+        {
+          id: "m008",
+          jointType: "wrist",
+          uploadDate: "2025-02-14T13:30:00",
+          filename: "wrist_motion_20250214.csv"
+        },
+        {
+          id: "m009",
+          jointType: "knee",
+          uploadDate: "2025-02-14T13:35:00",
+          filename: "knee_motion_20250214.csv"
+        }
+      ]
     },
   ]);
 
@@ -64,8 +183,12 @@ const PhysicianView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("model"); // Options: "model", "messages"
+  const [jointTab, setJointTab] = useState("readings");
   const selectedPatientRef = useRef();
   const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
+
+  const [patientMotionFiles, setPatientMotionFiles] = useState([]);
+  const [selectedMotionFile, setSelectedMotionFile] = useState(null);
 
   useEffect(() => {
     selectedPatientRef.current = selectedPatient
@@ -98,13 +221,13 @@ const PhysicianView = () => {
   };
 
   const handlePatientClick = (patient) => {
-    if(selectedPatient != null){
-      socket.emit('leave',{patient_id: selectedPatient.id, physician_id: 1})
+    if (selectedPatient != null) {
+      socket.emit('leave', { patient_id: selectedPatient.id, physician_id: 1 })
     }
     setSelectedPatient(patient);
-    socket.emit('join',{patient_id: patient.id, physician_id: 1})
+    socket.emit('join', { patient_id: patient.id, physician_id: 1 })
     setShowDetail(true);
-    
+
     // On mobile, collapse sidebar when patient is selected
     if (window.innerWidth < 768) {
       setSidebarCollapsed(true);
@@ -124,7 +247,7 @@ const PhysicianView = () => {
         localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
         return combinedIds;
       });
-      
+
       // Scroll to bottom
       scrollToBottom();
     }
@@ -135,15 +258,15 @@ const PhysicianView = () => {
       const patient = selectedPatientRef.current
       setPatients(patients => {
         const updatedPatients = patients.map(p => {
-          if(p.id == patient.id){
-            setSelectedPatient(() => {return {...p, messages: [...(p.messages),data]}})
-            return {...p, messages: [...(p.messages),data]}
+          if (p.id == patient.id) {
+            setSelectedPatient(() => { return { ...p, messages: [...(p.messages), data] } })
+            return { ...p, messages: [...(p.messages), data] }
           }
           return p
         })
         return updatedPatients
       })
-      
+
       // If the new message is not from the physician, don't automatically mark it as read
       // unless the messages tab is currently active
       if (data.sender != 1) {
@@ -166,7 +289,7 @@ const PhysicianView = () => {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-    
+
     try {
       // create message
       const newMessageObj = {
@@ -206,10 +329,41 @@ const PhysicianView = () => {
     return date.toLocaleString();
   };
 
+  // Helper functions for joint analysis
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const getJointStatusColor = (readings) => {
+    const range = readings.max - readings.min;
+    const normalRange = readings.normal.max - readings.normal.min;
+    const percentage = (range / normalRange) * 100;
+    
+    if (percentage >= 90) return "bg-green-500";
+    if (percentage >= 70) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+
+  const getJointTypeColor = (jointType) => {
+    switch(jointType.toLowerCase()) {
+      case 'shoulder': return 'bg-blue-600';
+      case 'elbow': return 'bg-green-600';
+      case 'wrist': return 'bg-purple-600';
+      case 'knee': return 'bg-amber-600';
+      default: return 'bg-gray-600';
+    }
+  };
+
+  const handleViewFile = (file) => {
+    console.log("Opening file:", file);
+  };
+
   // Check for unread messages for a specific patient
   const getUnreadMessagesCount = (patient) => {
     if (!patient.messages) return 0;
-    return patient.messages.filter(msg => 
+    return patient.messages.filter(msg =>
       msg.sender != 1 && !readMessageIds.includes(msg.id)
     ).length;
   };
@@ -218,20 +372,20 @@ const PhysicianView = () => {
     async function loadPatients() {
       const token = await getAccessTokenSilently()
       const response = await getPatients(token);
-      if(response.ok){
+      if (response.ok) {
         const _patients = await response.json();
         let patientsCopy = [...patients];
-        
+
         for (let i = 0; i < Math.min(2, _patients.length); i++) {
           patientsCopy[i].id = _patients[i].id;
           patientsCopy[i].name = _patients[i].first_name + ' ' + _patients[i].last_name;
-          
+
           // fetch patient messages
           try {
-            const response = await getMessages({'physician_id':1, 'patient_id':patientsCopy[i].id},token);
+            const response = await getMessages({ 'physician_id': 1, 'patient_id': patientsCopy[i].id }, token);
             const data = await response.json()
             patientsCopy[i].messages = data;
-            
+
             // If this patient is already selected and messages tab is active, mark messages as read
             if (selectedPatient && selectedPatient.id === patientsCopy[i].id && activeTab === "messages") {
               const messageIds = data.map(msg => msg.id);
@@ -246,7 +400,7 @@ const PhysicianView = () => {
             patientsCopy[i].messages = [];
           }
         }
-        
+
         setPatients(patientsCopy);
       } else {
         console.error("Failed to fetch patients");
@@ -256,6 +410,37 @@ const PhysicianView = () => {
 
     loadPatients();
   }, [activeTab, selectedPatient]);
+
+  useEffect(() => {
+    async function fetchPatientMotionFiles() {
+      if (!selectedPatient) return;
+
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await getMotionFiles(selectedPatient.id, token);
+        if (response.ok) {
+          const files = await response.json();
+          setPatientMotionFiles(files);
+          // Optionally select the first file by default
+          if (files.length > 0) {
+            setSelectedMotionFile(files[0]);
+          } else {
+            setSelectedMotionFile(null);
+          }
+        } else {
+          console.error("Failed to fetch motion files");
+          setPatientMotionFiles([]);
+          setSelectedMotionFile(null);
+        }
+      } catch (error) {
+        console.error("Error fetching motion files:", error);
+        setPatientMotionFiles([]);
+        setSelectedMotionFile(null);
+      }
+    }
+
+    fetchPatientMotionFiles();
+  }, [selectedPatient]);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
@@ -268,9 +453,9 @@ const PhysicianView = () => {
           </div>
           <div className="flex items-center">
             {user?.picture ? (
-              <img 
-                src={user.picture} 
-                alt="Profile" 
+              <img
+                src={user.picture}
+                alt="Profile"
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-full mr-2 sm:mr-3"
               />
             ) : (
@@ -279,7 +464,7 @@ const PhysicianView = () => {
               </div>
             )}
             <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {user?.name || "Physician"}</span>
-            <button 
+            <button
               onClick={() => logout({ returnTo: window.location.origin })}
               className="text-gray-500 hover:text-red-600 transition-colors"
               title="Logout"
@@ -298,7 +483,7 @@ const PhysicianView = () => {
               <Users className="h-5 w-5 mr-2 text-blue-600" />
               Patients
             </h2>
-            <button 
+            <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="text-gray-500 hover:text-blue-600 transition-colors"
             >
@@ -312,11 +497,10 @@ const PhysicianView = () => {
                 <button
                   key={patient.id}
                   onClick={() => handlePatientClick(patient)}
-                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${
-                    selectedPatient?.id === patient.id
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700 hover:text-gray-900"
-                  } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
+                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${selectedPatient?.id === patient.id
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:text-gray-900"
+                    } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
                 >
                   {sidebarCollapsed ? (
                     <User className="h-6 w-6" />
@@ -363,22 +547,20 @@ const PhysicianView = () => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleTabChange("model")}
-                      className={`px-3 py-2 rounded-md flex items-center ${
-                        activeTab === "model" 
-                          ? "bg-blue-50 text-blue-700 font-medium" 
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      className={`px-3 py-2 rounded-md flex items-center ${activeTab === "model"
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                        }`}
                     >
                       <Activity className="h-4 w-4 mr-2" />
                       Patient Model
                     </button>
                     <button
                       onClick={() => handleTabChange("messages")}
-                      className={`px-3 py-2 rounded-md flex items-center ${
-                        activeTab === "messages" 
-                          ? "bg-blue-50 text-blue-700 font-medium" 
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      className={`px-3 py-2 rounded-md flex items-center ${activeTab === "messages"
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                        }`}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Messages
@@ -400,6 +582,28 @@ const PhysicianView = () => {
                         <Activity className="h-5 w-5 mr-2 text-blue-600" />
                         Patient Model
                       </h3>
+
+                      {/* Motion File Selector */}
+                      <div className="flex items-center">
+                        <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                        <select
+                          className="border border-gray-300 rounded-md text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={selectedMotionFile?.id || ""}
+                          onChange={(e) => {
+                            const fileId = e.target.value;
+                            const file = patientMotionFiles.find(f => f.id.toString() === fileId);
+                            setSelectedMotionFile(file || null);
+                          }}
+                        >
+                          <option value="">Select motion file</option>
+                          {patientMotionFiles.map(file => (
+                            <option key={file.id} value={file.id}>
+                              {file.name} ({file.type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
                         <PatientModel />
                       </div>
@@ -410,19 +614,56 @@ const PhysicianView = () => {
                         <BarChart className="h-5 w-5 mr-2 text-blue-600" />
                         Joint Analysis
                       </h3>
-                      <div className="space-y-4">
-                        {Object.entries(selectedPatient.exerciseQuality).map(
-                          ([joint, quality]) => (
-                            <div key={joint} className="border-b pb-3">
-                              <div className="font-medium text-gray-900 capitalize flex items-center">
-                                <span className={`h-2 w-2 rounded-full mr-2 ${getQualityColor(quality).replace('text-', 'bg-')}`}></span>
-                                {joint}
-                              </div>
-                              <div className={`text-sm mt-1 ${getQualityColor(quality)}`}>{quality}</div>
-                            </div>
-                          )
-                        )}
+                      
+                      <div className="mb-4 border-b">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setJointTab("readings")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "readings" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            Motion Readings
+                          </button>
+                          <button
+                            onClick={() => setJointTab("files")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "files" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Motion Files
+                          </button>
+                        </div>
                       </div>
+                      
+                      {jointTab === "readings" && (
+                        <MotionReadingsTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          getJointStatusColor={getJointStatusColor}
+                        />
+                      )}
+                      
+                      {jointTab === "files" && (
+                        <MotionFilesTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          handleViewFile={handleViewFile}
+                        />
+                      )}
+                            
+                            {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
+                              <div className="text-center py-8 text-gray-500">
+                                <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                                <p>No motion files available</p>
+                              </div>
+                            )}
                     </div>
                   </div>
                 </>
@@ -443,11 +684,10 @@ const PhysicianView = () => {
                               className={`flex ${msg.sender == 1 ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-[80%] rounded-lg p-3 ${
-                                  msg.sender == 1
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white border border-gray-300 text-black'
-                                }`}
+                                className={`max-w-[80%] rounded-lg p-3 ${msg.sender == 1
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white border border-gray-300 text-black'
+                                  }`}
                               >
                                 <div className="flex items-center">
                                   <span className="font-medium text-sm">
@@ -455,9 +695,8 @@ const PhysicianView = () => {
                                   </span>
                                 </div>
                                 <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
-                                <div className={`text-xs mt-1 text-right ${
-                                  msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
-                                }`}>
+                                <div className={`text-xs mt-1 text-right ${msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
+                                  }`}>
                                   {formatMessageDate(msg.timestamp)}
                                 </div>
                               </div>
@@ -474,7 +713,7 @@ const PhysicianView = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-4">
                       <textarea
                         value={message}
@@ -508,7 +747,7 @@ const PhysicianView = () => {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

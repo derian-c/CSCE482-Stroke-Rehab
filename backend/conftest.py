@@ -9,6 +9,7 @@ from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
 from models.patient_physician import PatientPhysician
+from models.motion_file import Motion_File
 
 @pytest.fixture(scope='module')
 def app():
@@ -49,7 +50,7 @@ def populate_database(app):
     db.session.query(Chat).delete()
     db.session.query(PatientPhysician).delete()
     db.session.query(User).delete()
-    db.session.execute(db.text('TRUNCATE TABLE users,chats,chat_messages,devices,patient_physicians RESTART IDENTITY;'))
+    db.session.execute(db.text('TRUNCATE TABLE users,chats,chat_messages,devices,patient_physicians,motion_files RESTART IDENTITY;'))
     db.session.commit()
 
 @pytest.fixture(scope='session')

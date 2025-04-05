@@ -20,6 +20,8 @@ import {
 import { socket } from '@/socket'
 import { getMessages } from '@/apis/messagesService'
 import { getMotionFiles } from "../apis/motionFileService";
+import MotionReadingsTab from '@/components/MotionReadingsTab'
+import MotionFilesTab from '@/components/MotionFilesTab'
 
 const PhysicianView = () => {
   const { user, logout, getAccessTokenSilently } = useAuth0();

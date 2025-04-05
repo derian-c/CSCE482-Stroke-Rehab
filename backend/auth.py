@@ -2,6 +2,7 @@ import json
 import os
 from urllib.request import urlopen
 from functools import wraps
+import requests
 
 from flask import request, g
 from jose import jwt,exceptions
@@ -12,6 +13,8 @@ load_dotenv()
 AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN')
 API_AUDIENCE = os.environ.get('API_AUDIENCE')
 ALGORITHMS = ["RS256"]
+AUTH0_MANAGEMENT_ID = os.environ.get('AUTH0_MANAGEMENT_ID')
+AUTH0_MANAGEMENT_SECRET = os.environ.get('AUTH0_MANAGEMENT_SECRET')
 
 # Error handler
 class AuthError(Exception):
@@ -96,8 +99,22 @@ def requires_auth(f):
                                 "description":
                                     "Unable to parse authentication"
                                     " token."}, 401)
+            
+            g.current_user_roles = payload.get('https://yourapp.com/roles')
 
-            g.current_user = payload
+            body= {
+                'grant_type': 'client_credentials',
+                'client_id': AUTH0_MANAGEMENT_ID,
+                'client_secret': AUTH0_MANAGEMENT_SECRET,
+                'audience': 'https://'+AUTH0_DOMAIN+'/api/v2/'
+            }
+            # Get management token to get current user's info
+            management_token = requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',
+                                            data=body).json().get('access_token')
+            # This endpoint gets the user's info using their id from the 'sub' key in their access token payload
+            g.current_user = requests.get('https://'+AUTH0_DOMAIN+'/api/v2/users/'+payload['sub'],
+                                          headers={'Authorization': 'Bearer '+management_token}).json()
+            
             return f(*args, **kwargs)
         raise AuthError({"code": "invalid_header",
                         "description": "Unable to find appropriate key"}, 401)

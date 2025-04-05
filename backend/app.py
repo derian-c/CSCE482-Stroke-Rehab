@@ -13,6 +13,7 @@ from models.chat_message import ChatMessage
 from models.device import Device
 from auth import requires_auth, AuthError
 from talisman import Talisman
+from models.patient_document import PatientDocument
 
 load_dotenv()
 db_url = os.environ.get('DATABASE_URL')
@@ -41,6 +42,9 @@ app.register_blueprint(chat_messages)
 
 from controllers.device import devices
 app.register_blueprint(devices)
+
+from controllers.patient_document import patient_documents
+app.register_blueprint(patient_documents)
 
 sock = SocketIO(app, cors_allowed_origins=frontend_url)
 

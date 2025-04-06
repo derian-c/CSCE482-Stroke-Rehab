@@ -27,8 +27,10 @@ import {
   MonitorSmartphone,
 } from "lucide-react";
 
+
 function AdminView({userInfo}) {
-  const { user, getAccessTokenSilently, isLoading } = useAuth0();
+  const { user, getAccessTokenSilently, isLoading, logout } = useAuth0();
+
   const [canEnter, setCanEnter] = useState(false);
   const navigate = useNavigate();
   const { data, loading } = useFetchProtectedData("/api/private");
@@ -51,6 +53,23 @@ function AdminView({userInfo}) {
     autoLogout: 30,
     dataRetentionDays: 90,
   });
+
+  // Handle logout functionality
+  const handleLogout = () => {
+    // Add to activity log
+    const newActivityLog = {
+      id: activityLog.length + 1,
+      user: user?.name || "Admin",
+      action: "Logged out",
+      timestamp: new Date().toISOString(),
+    };
+    setActivityLog([newActivityLog, ...activityLog]);
+    
+    const returnUrl = window.location.origin;
+    
+    // Log out using Auth0 and redirect to the appropriate home page
+    logout({ returnTo: returnUrl });
+  };
 
   // check perms
   useEffect(() => {
@@ -345,6 +364,7 @@ function AdminView({userInfo}) {
               {user?.name || "User"}
             </span>
             <button
+              onClick={handleLogout}
               className="text-gray-500 hover:text-red-600 transition-colors"
               title="Logout"
             >

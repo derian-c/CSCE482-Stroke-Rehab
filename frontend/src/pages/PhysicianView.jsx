@@ -17,13 +17,13 @@ import {
   BarChart,
   MessageCircle
 } from "lucide-react";
-import { socket } from '@/socket'
+import { useSocket } from '@/components/SocketProvider'
 import { getMessages } from '@/apis/messagesService'
 import { getMotionFiles } from "../apis/motionFileService";
 import MotionReadingsTab from '@/components/MotionReadingsTab'
 import MotionFilesTab from '@/components/MotionFilesTab'
 
-const PhysicianView = () => {
+const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
   const [patients, setPatients] = useState([
     {
@@ -192,6 +192,8 @@ const PhysicianView = () => {
   const [patientMotionFiles, setPatientMotionFiles] = useState([]);
   const [selectedMotionFile, setSelectedMotionFile] = useState(null);
 
+  const socket = useSocket()
+
   useEffect(() => {
     selectedPatientRef.current = selectedPatient
   }, [selectedPatient]);
@@ -224,10 +226,10 @@ const PhysicianView = () => {
 
   const handlePatientClick = (patient) => {
     if (selectedPatient != null) {
-      socket.emit('leave', { patient_id: selectedPatient.id, physician_id: 1 })
+      socket.emit('leave', { patient_id: selectedPatient.id, physician_id: userInfo.id })
     }
     setSelectedPatient(patient);
-    socket.emit('join', { patient_id: patient.id, physician_id: 1 })
+    socket.emit('join', { patient_id: patient.id, physician_id: userInfo.id })
     setShowDetail(true);
 
     // On mobile, collapse sidebar when patient is selected
@@ -296,9 +298,9 @@ const PhysicianView = () => {
       // create message
       const newMessageObj = {
         patient_id: selectedPatient.id,
-        physician_id: 1,
+        physician_id: userInfo.id,
         content: message,
-        sender: 1
+        sender: userInfo.id
       }
       socket.emit('message', newMessageObj)
     } catch (error) {
@@ -373,40 +375,38 @@ const PhysicianView = () => {
   useEffect(() => {
     async function loadPatients() {
       const token = await getAccessTokenSilently()
-      const response = await getPatients(token);
-      if (response.ok) {
-        const _patients = await response.json();
-        let patientsCopy = [...patients];
+      const _patients = userInfo.patients
+      let patientsCopy = [...patients];
 
-        for (let i = 0; i < Math.min(2, _patients.length); i++) {
-          patientsCopy[i].id = _patients[i].id;
-          patientsCopy[i].name = _patients[i].first_name + ' ' + _patients[i].last_name;
+      for (let i = 0; i < Math.min(2, _patients.length); i++) {
+        patientsCopy[i].id = _patients[i].id;
+        patientsCopy[i].name = _patients[i].first_name + ' ' + _patients[i].last_name;
 
-          // fetch patient messages
-          try {
-            const response = await getMessages({ 'physician_id': 1, 'patient_id': patientsCopy[i].id }, token);
-            const data = await response.json()
-            patientsCopy[i].messages = data;
+        // fetch patient messages
+        try {
+          const response = await getMessages({ 'physician_id': userInfo.id, 'patient_id': patientsCopy[i].id }, token);
+          const data = await response.json()
+          patientsCopy[i].messages = data;
 
-            // If this patient is already selected and messages tab is active, mark messages as read
-            if (selectedPatient && selectedPatient.id === patientsCopy[i].id && activeTab === "messages") {
-              const messageIds = data.map(msg => msg.id);
-              setReadMessageIds(prevReadIds => {
-                const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
-                localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
-                return combinedIds;
-              });
-            }
-          } catch (error) {
-            console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
-            patientsCopy[i].messages = [];
+          // If this patient is already selected and messages tab is active, mark messages as read
+          if (selectedPatient && selectedPatient.id === patientsCopy[i].id && activeTab === "messages") {
+            const messageIds = data.map(msg => msg.id);
+            setReadMessageIds(prevReadIds => {
+              const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+              localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+              return combinedIds;
+            });
           }
+        } catch (error) {
+          console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
+          patientsCopy[i].messages = [];
         }
-
-        setPatients(patientsCopy);
-      } else {
-        console.error("Failed to fetch patients");
       }
+
+      setPatients(patientsCopy);
+      // } else {
+      //   console.error("Failed to fetch patients");
+      // }
       setIsLoading(false);
     }
 

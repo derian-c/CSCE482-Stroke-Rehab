@@ -11,6 +11,7 @@ from models.user import User
 from models.patient_physician import PatientPhysician
 from models.motion_file import Motion_File
 import controllers.messaging
+import controllers.connection
 from auth import requires_auth, AuthError
 from talisman import Talisman
 

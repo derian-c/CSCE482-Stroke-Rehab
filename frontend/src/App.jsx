@@ -11,6 +11,8 @@ import ProviderView from './pages/ProviderView'
 import MedicalHistoryPage from './pages/MedicalHistoryPage'
 import ExerciseRecordsPage from './pages/ExerciseRecordsPage'
 import LabResultsPage from './pages/LabResultsPage'
+import LoadingScreen from '@/components/LoadingScreen'
+import { useSocket } from '@/components/SocketProvider'
 import { getUsersRole } from '@/apis/getUserRole'
 import { getRouteByRole } from './utils/roleNavigation'
 
@@ -18,6 +20,30 @@ import { getRouteByRole } from './utils/roleNavigation'
 import './styles/AccessibilityStyles.css'
 
 function App() {
+  const socket = useSocket()
+  const [ userInfo, setUserInfo ] = useState(null)
+  const [ homeMessage, setHomeMessage ] = useState('')
+  useEffect(() => {
+    if(!socket) return
+    function onUserInfo(data){
+      setUserInfo(data)
+    }
+    function onWait(data){
+      setHomeMessage(data.message)
+    }
+    function onRelogin(data){
+      setHomeMessage(data.message)
+    }
+    socket.on('user_info',onUserInfo)
+    socket.on('relogin',onRelogin)
+    socket.on('wait', onWait)
+    return () => {
+      socket.off('user_info',onUserInfo)
+      socket.off('relogin',onRelogin)
+      socket.off('wait', onWait)
+    }
+  }, [socket])
+  
   const { isAuthenticated, user, getAccessTokenSilently, isLoading } = useAuth0()
   const navigate = useNavigate()
   const [initialRedirectAttempted, setInitialRedirectAttempted] = useState(false)
@@ -50,13 +76,13 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home homeMessage={homeMessage} />} />
         {/* The profile route is protected */}
         <Route 
           path="/admin"
           element={
             <ProtectedRoute allowedRole='Admin'>
-              <AdminView />
+              <AdminView userInfo={userInfo}/>
             </ProtectedRoute>
           }
         />
@@ -64,7 +90,9 @@ function App() {
           path="/patient"
           element={
             <ProtectedRoute allowedRole='Patient'>
-              <PatientView />
+              {userInfo ? 
+              <PatientView userInfo={userInfo}/> :
+              <LoadingScreen/>}
             </ProtectedRoute>
           }
         />
@@ -72,7 +100,9 @@ function App() {
           path="/physician"
           element={
             <ProtectedRoute allowedRole='Physician'>
-              <PhysicianView />
+              {userInfo ? 
+              <PhysicianView userInfo={userInfo}/> :
+              <LoadingScreen/>}
             </ProtectedRoute>
           }
         />
@@ -90,7 +120,7 @@ function App() {
           path="/medical-history"
           element={
             <ProtectedRoute allowedRole='Patient'>
-              <MedicalHistoryPage />
+              <MedicalHistoryPage userInfo={userInfo}/>
             </ProtectedRoute>
           }
         />
@@ -98,7 +128,7 @@ function App() {
           path="/exercise-records"
           element={
             <ProtectedRoute allowedRole='Patient'>
-              <ExerciseRecordsPage />
+              <ExerciseRecordsPage userInfo={userInfo}/>
             </ProtectedRoute>
           }
         />
@@ -106,7 +136,7 @@ function App() {
           path="/lab-results"
           element={
             <ProtectedRoute allowedRole='Patient'>
-              <LabResultsPage />
+              <LabResultsPage userInfo={userInfo}/>
             </ProtectedRoute>
           }
         />

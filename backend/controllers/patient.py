@@ -3,7 +3,9 @@ from extensions import db
 from models.user import User
 from models.patient_physician import PatientPhysician
 from models.chat import Chat
-from auth import requires_auth
+from auth import requires_auth, AUTH0_DOMAIN
+import requests
+import os
 
 patients = Blueprint('patients', __name__, url_prefix='/patients')
 
@@ -53,7 +55,32 @@ def create_patient():
     if patient.is_patient:
       return jsonify({'error': 'Patient already exists'}), 422
     return jsonify({'error': 'User already exists'}), 422
-  patient = User(first_name=first_name,last_name=last_name,email_address=email_address,is_patient=True)
+  
+  AUTH0_MANAGEMENT_ID = os.environ.get('AUTH0_MANAGEMENT_ID')
+  AUTH0_MANAGEMENT_SECRET = os.environ.get('AUTH0_MANAGEMENT_SECRET')
+  body= {
+      'grant_type': 'client_credentials',
+      'client_id': AUTH0_MANAGEMENT_ID,
+      'client_secret': AUTH0_MANAGEMENT_SECRET,
+      'audience': 'https://'+AUTH0_DOMAIN+'/api/v2/'
+  }
+  # Get management token to get current user's info
+  management_token = requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',
+                                  data=body).json().get('access_token')
+  pending = True
+  # Returns a list of users with that email due to there being different providers
+  auth0_users = requests.get('https://'+AUTH0_DOMAIN+'/api/v2/users-by-email',
+                              headers={'Authorization': 'Bearer '+management_token},
+                              params={'email': email_address}).json()
+  # Update user's roles in Auth0
+  if auth0_users:
+    pending = False
+    role = os.environ.get('AUTH0_ADMIN_ROLE_ID')
+    requests.post('https://'+AUTH0_DOMAIN+'/api/v2/roles/'+role+'/users',
+                      headers={'Authorization': 'Bearer '+management_token},
+                      json={'users': [user['user_id'] for user in auth0_users]})
+    
+  patient = User(first_name=first_name,last_name=last_name,email_address=email_address,is_patient=True,pending=pending)
   db.session.add(patient)
   db.session.commit()
   # Try to find the physician

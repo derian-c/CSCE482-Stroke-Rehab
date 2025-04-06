@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { HeartPulse, Lock, Unlock } from "lucide-react";
 
-const Home = () => {
+const Home = ({homeMessage}) => {
   const { loginWithRedirect, logout, isAuthenticated } = useAuth0();
 
   return (
@@ -32,6 +32,7 @@ const Home = () => {
                   <span>Login</span>
                 </button>
               ) : (
+              <>
                 <button
                   onClick={() =>
                     logout({ logoutParams: { returnTo: window.location.origin } })
@@ -41,7 +42,13 @@ const Home = () => {
                   <Lock size={20} />
                   <span>Logout</span>
                 </button>
-              )}
+                
+                {/* Style this better probably */}
+                <div className="flex items-center justify-center font-medium text-red-600">
+                  {homeMessage}
+                </div>
+              </>
+            )}
             </div>
 
             <div className="pt-6 border-t border-gray-200">

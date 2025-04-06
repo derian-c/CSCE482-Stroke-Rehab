@@ -22,6 +22,7 @@ import { getMessages } from '@/apis/messagesService'
 import { getMotionFiles } from "../apis/motionFileService";
 import MotionReadingsTab from '@/components/MotionReadingsTab'
 import MotionFilesTab from '@/components/MotionFilesTab'
+import AccessibilityMenu from '@/components/AccessibilityMenu';
 
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -749,6 +750,8 @@ const PhysicianView = ({userInfo}) => {
           )}
         </div>
       </div>
+      
+      <AccessibilityMenu />
     </div >
   );
 };

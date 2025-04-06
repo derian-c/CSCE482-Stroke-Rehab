@@ -20,7 +20,7 @@ const PatientModel = () => {
       0.1,
       1000
     );
-    camera.position.set(4, 5, 11);
+    camera.position.set(10, 5, 5);
 
     //Create Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -43,7 +43,7 @@ const PatientModel = () => {
     controls.minPolarAngle = Math.PI / 6;
     controls.maxPolarAngle = Math.PI / 2;
     //Sets point of rotation
-    controls.target = new THREE.Vector3(0, 1, 0);
+    controls.target = new THREE.Vector3(0, 0, -3);
     controls.update();
 
     //Dynamically set container width and height
@@ -64,13 +64,15 @@ const PatientModel = () => {
       side: THREE.DoubleSide,
     });
     const groundMesh = new THREE.Mesh(ground, groundMaterial);
+    groundMesh.translateY(-2.85);
+    groundMesh.translateZ(-3);
     groundMesh.castShadow = false;
     groundMesh.receiveShadow = true;
     scene.add(groundMesh);
 
     //Create Basic Light
     const spotLight = new THREE.SpotLight(0xffffff, 3000, 100, Math.PI / 8, 1);
-    spotLight.position.set(0, 25, 0);
+    spotLight.position.set(0, 25, 10);
     spotLight.castShadow = true;
     scene.add(spotLight);
 
@@ -80,6 +82,10 @@ const PatientModel = () => {
       "/noSphereModel.glb",
       (gltf) => {
         const mesh = gltf.scene;
+        //Need to rotate model to be upright because opensim swaps z and y axis
+        const rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.makeRotationX(-Math.PI / 2);
+        mesh.applyMatrix4(rotationMatrix);
         mesh.scale.set(3, 3, 3);
         //Some models are broken into multiple meshes
         //This casts the shadow for each mesh part

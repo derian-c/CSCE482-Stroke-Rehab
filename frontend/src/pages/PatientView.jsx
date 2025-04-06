@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { UNSAFE_getPatchRoutesOnNavigationFunction, useNavigate } from "react-router-dom";
 import {
   Activity,
   MessageSquare,
@@ -188,9 +188,7 @@ const PatientView = () => {
     navigate(`/${page}`);
   };
 
-  // Get the current patient's ID - in a real app, this would come from authentication or context
-  // For now, we'll use a fixed ID of 1
-  const currentPatientId = 1;
+  const currentPatientId = userInfo.id;
 
   const TabButton = ({ tab, icon, label, notification = false }) => (
     <button

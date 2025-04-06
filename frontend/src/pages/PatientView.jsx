@@ -14,13 +14,12 @@ import {
   User,
   LogOut,
   MessageCircle,
-  PlusCircle,
-  Clock
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getMessages } from '@/apis/messagesService';
 import { socket } from '@/socket';
 import AccessibilityMenu from '../components/AccessibilityMenu';
+import Medications from '../components/Medications';
 
 const PatientView = () => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -32,20 +31,6 @@ const PatientView = () => {
   
   // messages state
   const [messages, setMessages] = useState([]);
-  
-  // medication states
-  const [medications, setMedications] = useState([
-    { id: 1, name: "Ibuprofen", dosage: "400mg", frequency: "Twice daily", logs: [{timestamp: "2025-03-28T14:30:00"}] },
-    { id: 2, name: "Lisinopril", dosage: "10mg", frequency: "Once daily", logs: [{timestamp: "2025-03-28T08:15:00"}] },
-    { id: 3, name: "Vitamin D", dosage: "1000 IU", frequency: "Once daily", logs: [{timestamp: "2025-03-28T09:00:00"}] }
-  ]);
-  
-  // new medication form state
-  const [newMedication, setNewMedication] = useState({
-    name: "",
-    dosage: "",
-    frequency: ""
-  });
   
   // sample
   const exerciseProgress = 75;
@@ -181,59 +166,6 @@ const PatientView = () => {
     return date.toLocaleString();
   };
 
-  // adding new med
-  const handleAddMedication = (e) => {
-    e.preventDefault();
-    if (!newMedication.name || !newMedication.dosage || !newMedication.frequency) return;
-    
-    const newMed = {
-      id: medications.length + 1,
-      ...newMedication,
-      logs: []
-    };
-    
-    setMedications([...medications, newMed]);
-    setNewMedication({ name: "", dosage: "", frequency: "" });
-  };
-
-  // medication intake log
-  const handleLogMedication = (id) => {
-    const updatedMedications = medications.map(med => {
-      if (med.id === id) {
-        return {
-          ...med,
-          logs: [...med.logs, { timestamp: new Date().toISOString() }]
-        };
-      }
-      return med;
-    });
-    
-    setMedications(updatedMedications);
-  };
-
-  // add new medication
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewMedication({ ...newMedication, [name]: value });
-  };
-
-  const TabButton = ({ tab, icon, label, notification = false }) => (
-    <button
-      onClick={() => handleTabChange(tab)}
-      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
-        activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
-      }`}
-      aria-selected={activeTab === tab}
-      aria-controls={`${tab}-panel`}
-    >
-      {React.createElement(icon, { className: "h-4 w-4 mr-1", "aria-hidden": "true" })}
-      {label}
-      {notification && (
-        <span className="ml-1 w-2 h-2 bg-red-500 rounded-full" aria-label="New notifications"></span>
-      )}
-    </button>
-  );
-
   // State to track which messages have been read - stored in localStorage
   const [readMessageIds, setReadMessageIds] = useState(() => {
     // Initialize from localStorage if available
@@ -255,6 +187,27 @@ const PatientView = () => {
   const navigateToPage = (page) => {
     navigate(`/${page}`);
   };
+
+  // Get the current patient's ID - in a real app, this would come from authentication or context
+  // For now, we'll use a fixed ID of 1
+  const currentPatientId = 1;
+
+  const TabButton = ({ tab, icon, label, notification = false }) => (
+    <button
+      onClick={() => handleTabChange(tab)}
+      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
+        activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
+      }`}
+      aria-selected={activeTab === tab}
+      aria-controls={`${tab}-panel`}
+    >
+      {React.createElement(icon, { className: "h-4 w-4 mr-1", "aria-hidden": "true" })}
+      {label}
+      {notification && (
+        <span className="ml-1 w-2 h-2 bg-red-500 rounded-full" aria-label="New notifications"></span>
+      )}
+    </button>
+  );
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
@@ -307,7 +260,7 @@ const PatientView = () => {
                 notification={unreadMessages > 0}
               />
               <TabButton tab="records" icon={FileText} label="Medical Records" />
-              <TabButton tab="prescriptions" icon={Pill} label="Prescriptions" />
+              <TabButton tab="medications" icon={Pill} label="Medications" />
             </nav>
           </div>
 
@@ -520,148 +473,10 @@ const PatientView = () => {
               </div>
             )}
 
-            {/* Prescriptions Tab */}
-            {activeTab === "prescriptions" && (
-              <div id="prescriptions-panel" role="tabpanel" aria-labelledby="prescriptions-tab">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <Pill className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
-                  Prescriptions & Medications
-                </h2>
-                
-                <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6 flex items-center">
-                  <Pill className="h-6 w-6 text-green-600 mr-3 flex-shrink-0" aria-hidden="true" />
-                  <div>
-                    <h3 className="font-medium text-green-700">Medication Tracker</h3>
-                    <p className="text-sm text-green-600">
-                      Track your medications and log when you take them. You can also add new medications prescribed to you.
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Add New Medication Form */}
-                <div className="bg-white border border-gray-200 rounded-md p-4 mb-6">
-                  <h3 className="font-medium text-gray-900 mb-3 flex items-center">
-                    <PlusCircle className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
-                    Add New Medication
-                  </h3>
-                  
-                  <form onSubmit={handleAddMedication} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label htmlFor="med-name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Medication Name
-                      </label>
-                      <input
-                        type="text"
-                        id="med-name"
-                        name="name"
-                        value={newMedication.name}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. Ibuprofen"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="med-dosage" className="block text-sm font-medium text-gray-700 mb-1">
-                        Dosage
-                      </label>
-                      <input
-                        type="text"
-                        id="med-dosage"
-                        name="dosage"
-                        value={newMedication.dosage}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. 400mg"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="med-frequency" className="block text-sm font-medium text-gray-700 mb-1">
-                        Frequency
-                      </label>
-                      <input
-                        type="text"
-                        id="med-frequency"
-                        name="frequency"
-                        value={newMedication.frequency}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. Twice daily"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-3">
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
-                      >
-                        <PlusCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-                        Add Medication
-                      </button>
-                    </div>
-                  </form>
-                </div>
-                
-                {/* Medications List */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900 mb-3 flex items-center">
-                    <Pill className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
-                    Your Medications
-                  </h3>
-                  
-                  {medications.length > 0 ? (
-                    medications.map(medication => (
-                      <div key={medication.id} className="bg-white border border-gray-200 rounded-md p-4">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-                          <div>
-                            <h4 className="font-medium text-gray-900 flex items-center">
-                              <Pill className="h-4 w-4 mr-1 text-blue-600" aria-hidden="true" />
-                              {medication.name}
-                            </h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {medication.dosage} · {medication.frequency}
-                            </p>
-                          </div>
-                          
-                          <button 
-                            onClick={() => handleLogMedication(medication.id)}
-                            className="mt-3 md:mt-0 px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors flex items-center self-start"
-                            aria-label={`Log intake for ${medication.name}`}
-                          >
-                            <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
-                            Log Intake
-                          </button>
-                        </div>
-                        
-                        {/* Medication Logs */}
-                        <div className="mt-3">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Intake:</h5>
-                          {medication.logs.length > 0 ? (
-                            <div className="max-h-32 overflow-y-auto">
-                              {medication.logs.slice().reverse().map((log, idx) => (
-                                <div key={idx} className="text-xs text-gray-600 py-1 flex items-center border-b border-gray-100 last:border-0">
-                                  <Clock className="h-3 w-3 mr-1 text-blue-600" aria-hidden="true" />
-                                  {formatMessageDate(log.timestamp)}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-500">No logs yet</p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <Pill className="h-8 w-8 mx-auto text-gray-300 mb-2" aria-hidden="true" />
-                      <p>No medications added yet</p>
-                    </div>
-                  )}
-                </div>
+            {/* Medications Tab */}
+            {activeTab === "medications" && (
+              <div id="medications-panel" role="tabpanel" aria-labelledby="medications-tab">
+                <Medications patientId={currentPatientId} />
               </div>
             )}
           </div>

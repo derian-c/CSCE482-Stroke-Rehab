@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import "./index.css";
 import App from "./App.jsx";
+import { SocketProvider } from '@/components/SocketProvider'
 import ReactDOM from "react-dom/client";
 import { Auth0Provider } from "@auth0/auth0-react";
 import { BrowserRouter } from "react-router-dom";
@@ -22,7 +23,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       cacheLocation="localstorage"
     >
       <BrowserRouter>
-        <App />
+        <SocketProvider>
+          <App />
+        </SocketProvider>
       </BrowserRouter>
     </Auth0Provider>
   </StrictMode>

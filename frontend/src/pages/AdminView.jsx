@@ -27,7 +27,7 @@ import {
   MonitorSmartphone,
 } from "lucide-react";
 
-function AdminView() {
+function AdminView({userInfo}) {
   const { user, getAccessTokenSilently, isLoading } = useAuth0();
   const [canEnter, setCanEnter] = useState(false);
   const navigate = useNavigate();

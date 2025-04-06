@@ -46,4 +46,12 @@ class User(Base):
     return f'User({self.dict()})'
   
   def dict(self):
-    return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    user_dict = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    # To prevent recursively calling the dict function forever
+    if self.physician:
+      physician_dict = {c.name: getattr(self, c.name) for c in self.physician.__table__.columns}
+      user_dict['physician'] = physician_dict
+    if self.patients:
+      patient_dicts = [{c.name: getattr(self, c.name) for c in patient.__table__.columns} for patient in self.patients]
+      user_dict['patients'] = patient_dicts
+    return user_dict

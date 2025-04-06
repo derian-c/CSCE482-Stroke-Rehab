@@ -13,8 +13,6 @@ load_dotenv()
 AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN')
 API_AUDIENCE = os.environ.get('API_AUDIENCE')
 ALGORITHMS = ["RS256"]
-AUTH0_MANAGEMENT_ID = os.environ.get('AUTH0_MANAGEMENT_ID')
-AUTH0_MANAGEMENT_SECRET = os.environ.get('AUTH0_MANAGEMENT_SECRET')
 
 # Error handler
 class AuthError(Exception):
@@ -101,19 +99,7 @@ def requires_auth(f):
                                     " token."}, 401)
             
             g.current_user_roles = payload.get('https://yourapp.com/roles')
-
-            body= {
-                'grant_type': 'client_credentials',
-                'client_id': AUTH0_MANAGEMENT_ID,
-                'client_secret': AUTH0_MANAGEMENT_SECRET,
-                'audience': 'https://'+AUTH0_DOMAIN+'/api/v2/'
-            }
-            # Get management token to get current user's info
-            management_token = requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',
-                                            data=body).json().get('access_token')
-            # This endpoint gets the user's info using their id from the 'sub' key in their access token payload
-            g.current_user = requests.get('https://'+AUTH0_DOMAIN+'/api/v2/users/'+payload['sub'],
-                                          headers={'Authorization': 'Bearer '+management_token}).json()
+            g.token_payload = payload
             
             return f(*args, **kwargs)
         raise AuthError({"code": "invalid_header",

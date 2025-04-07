@@ -14,6 +14,9 @@ from models.device import Device
 from auth import requires_auth, AuthError
 from talisman import Talisman
 from models.patient_document import PatientDocument
+from datetime import datetime, timedelta, timezone
+from azure.storage.blob import generate_container_sas, ContainerSasPermissions
+
 
 load_dotenv()
 db_url = os.environ.get('DATABASE_URL')
@@ -45,6 +48,22 @@ app.register_blueprint(devices)
 
 from controllers.patient_document import patient_documents
 app.register_blueprint(patient_documents)
+
+@app.route('/sas_token',methods=['GET'])
+@requires_auth
+def get_sas_token():
+  sas_token = generate_container_sas(
+    account_name='capstorage2025',
+    container_name='patient-records',
+    account_key=os.environ.get('AZURE_ACCESS_KEY'),
+    permission=ContainerSasPermissions(read=True, write=True, delete=True),
+    expiry=datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
+  )
+  return jsonify({'token': sas_token})
+
+
+
+
 
 sock = SocketIO(app, cors_allowed_origins=frontend_url)
 

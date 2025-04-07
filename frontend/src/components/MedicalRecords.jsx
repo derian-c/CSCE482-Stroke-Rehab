@@ -16,6 +16,9 @@ import {
   createPatientDocument,
   deletePatientDocument
 } from '@/apis/patientDocumentService';
+import { BlobServiceClient } from "@azure/storage-blob"
+import { getSasToken } from '@/apis/sasTokenService'
+
 
 // Mapping of document types to icons and display names
 const DOCUMENT_TYPES = {
@@ -156,11 +159,22 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
   // Placeholder function for file upload 
   const uploadFileToStorage = async (file) => {
     // uploading file to blob storage logic should go here
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`https://storage.example.com/${Date.now()}-${file.name}`);
-      }, 1000);
-    });
+    const token = await getAccessTokenSilently()
+    const response = await getSasToken(token)
+    const responseJson = await response.json()
+    const sasToken = responseJson.token
+    const containerName = 'patient-records'
+    const storageAccountName = 'capstorage2025'
+
+    const blobServiceClient = new BlobServiceClient(`https://${storageAccountName}.blob.core.windows.net?${sasToken}`)
+
+    const containerClient = blobServiceClient.getContainerClient(containerName)
+    const newFilename = `${Date.now()}_${file.name}`
+    const blobClient = containerClient.getBlockBlobClient(newFilename)
+
+
+    await blobClient.uploadData(file)
+    return `https://${storageAccountName}.blob.core.windows.net/${containerName}/${newFilename}`
   };
 
   // Handle document deletion
@@ -204,7 +218,7 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
       >
         <div 
           className="flex items-start justify-between cursor-pointer"
-          onClick={() => setSelectedType(isSelected ? null : type)}
+          onClick={() => {}/*setSelectedType(isSelected ? null : type)*/}
         >
           <div className="flex items-start">
             <Icon className="h-5 w-5 mr-3 text-blue-600 mt-1 flex-shrink-0" aria-hidden="true" />

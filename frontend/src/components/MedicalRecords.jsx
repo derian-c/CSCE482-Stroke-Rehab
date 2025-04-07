@@ -160,7 +160,7 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
   const uploadFileToStorage = async (file) => {
     // uploading file to blob storage logic should go here
     const token = await getAccessTokenSilently()
-    const response = await getSasToken(token)
+    const response = await getSasToken('patient-records',token)
     const responseJson = await response.json()
     const sasToken = responseJson.token
     const containerName = 'patient-records'
@@ -207,7 +207,7 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
   // Open document in new tab
   const viewDocument = async (url, documentName) => {
     const token = await getAccessTokenSilently()
-    const sas_token = (await (await getSasToken(token)).json()).token
+    const sas_token = (await (await getSasToken('patient-records',token)).json()).token
     window.open(`${url}?${sas_token}`, '_blank', 'noopener,noreferrer');
   };
 

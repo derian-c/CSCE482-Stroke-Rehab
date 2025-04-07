@@ -1,13 +1,15 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, use } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-const PatientModel = () => {
+const PatientModel = ({file,token}) => {
+
   const containerReference = useRef(null);
   const isRendered = useRef(false);
 
   useEffect(() => {
+    if(!file || !token) return;
     if (isRendered.current) return;
     isRendered.current = true;
     //Create a New Scene to render
@@ -76,44 +78,49 @@ const PatientModel = () => {
     spotLight.castShadow = true;
     scene.add(spotLight);
 
-    const loader = new GLTFLoader().setPath("/Models");
+    const loader = new GLTFLoader();
+    // if(!url){
+    //   loader.setPath('/Models')
+    // }
     let mixer;
-    loader.load(
-      "/noSphereModel.glb",
-      (gltf) => {
-        const mesh = gltf.scene;
-        //Need to rotate model to be upright because opensim swaps z and y axis
-        const rotationMatrix = new THREE.Matrix4();
-        rotationMatrix.makeRotationX(-Math.PI / 2);
-        mesh.applyMatrix4(rotationMatrix);
-        mesh.scale.set(3, 3, 3);
-        //Some models are broken into multiple meshes
-        //This casts the shadow for each mesh part
-        mesh.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
+    if(file && token){
+      loader.load(
+        `${file.url}?${token}`,
+        (gltf) => {
+          const mesh = gltf.scene;
+          //Need to rotate model to be upright because opensim swaps z and y axis
+          const rotationMatrix = new THREE.Matrix4();
+          rotationMatrix.makeRotationX(-Math.PI / 2);
+          mesh.applyMatrix4(rotationMatrix);
+          mesh.scale.set(3, 3, 3);
+          //Some models are broken into multiple meshes
+          //This casts the shadow for each mesh part
+          mesh.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
 
-        //Translates entire models initial position
-        mesh.position.set(0, 0, 0);
-        scene.add(mesh);
+          //Translates entire models initial position
+          mesh.position.set(0, 0, 0);
+          scene.add(mesh);
 
-        mixer = new THREE.AnimationMixer(mesh);
-        gltf.animations.forEach((clip) => {
-          mixer.clipAction(clip).play();
-        });
-      },
-      (xhr) => {
-        // Shows loading percentage
-        const progress = (xhr.loaded / xhr.total) * 100;
-        console.log(`Loading: ${progress.toFixed(2)}%`);
-      },
-      (error) => {
-        console.error(error);
-      }
-    );
+          mixer = new THREE.AnimationMixer(mesh);
+          gltf.animations.forEach((clip) => {
+            mixer.clipAction(clip).play();
+          });
+        },
+        (xhr) => {
+          // Shows loading percentage
+          const progress = (xhr.loaded / xhr.total) * 100;
+          console.log(`Loading: ${progress.toFixed(2)}%`);
+        },
+        (error) => {
+          console.error(error);
+        }
+      );
+    }
 
     //When window is resized adjust camera and render size
     window.addEventListener("resize", () => {

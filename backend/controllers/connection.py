@@ -31,6 +31,9 @@ def on_connect():
       email_address = auth0_user.get('email')
       first_name = auth0_user.get('given_name')
       last_name = auth0_user.get('family_name')
+      if not first_name or not last_name:
+        first_name = auth0_user.get('nickname')
+        last_name = ''
       is_admin = False
       is_patient = False
       is_physician = False
@@ -40,6 +43,10 @@ def on_connect():
         is_physician = is_physician or role == 'Physician'
       user = User(email_address=email_address,first_name=first_name,last_name=last_name,is_admin=is_admin,is_patient=is_patient,is_physician=is_physician)
       db.session.add(user)
+      db.session.flush()
+      if user.last_name == '':
+        user.last_name = str(user.id)
+        db.session.add(user)
       db.session.commit()
       socket.emit('user_info', user.dict(), to=request.sid)
     else: # User signing in for the first time without being in the database

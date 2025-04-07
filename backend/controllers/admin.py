@@ -70,7 +70,7 @@ def create_admin():
                               headers={'Authorization': 'Bearer '+management_token},
                               params={'email': email_address}).json()
   # Update user's roles in Auth0
-  if auth0_users:
+  if auth0_users and 'Admin' not in g.current_user_roles:
     pending = False
     role = os.environ.get('AUTH0_ADMIN_ROLE_ID')
     requests.post('https://'+AUTH0_DOMAIN+'/api/v2/roles/'+role+'/users',

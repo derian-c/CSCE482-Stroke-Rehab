@@ -8,14 +8,16 @@ class Patient(Base):
   __tablename__ = 'patients'
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  name: Mapped[str]
+  first_name: Mapped[str]
+  last_name: Mapped[str]
   email_address: Mapped[str]
   physician_id: Mapped[int] = mapped_column(ForeignKey('physicians.id'))
   physician: Mapped['Physician'] = relationship(back_populates='patients')
+  chat: Mapped['Chat'] = relationship(back_populates='patient',cascade='all, delete',uselist=False)
 
 
   def __repr__(self) -> str:
-    return f'Patient(id={self.id!r}, email_address={self.email_address!r}, physician_id={self.physician_id})'
+    return f'Patient({self.dict()})'
   
   def dict(self):
     return {c.name: getattr(self, c.name) for c in self.__table__.columns}

@@ -3,14 +3,15 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_socketio import SocketIO, join_room, leave_room
-from extensions import db
-from models.patient import Patient
-from models.physician import Physician
-from models.admin import Admin
+from extensions import db, socket
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
+from models.user import User
+from models.patient_physician import PatientPhysician
+from models.motion_file import Motion_File
+import controllers.messaging
+import controllers.connection
 from auth import requires_auth, AuthError
 from talisman import Talisman
 from models.patient_document import PatientDocument
@@ -49,51 +50,10 @@ app.register_blueprint(devices)
 from controllers.patient_document import patient_documents
 app.register_blueprint(patient_documents)
 
-@app.route('/sas_token',methods=['GET'])
-@requires_auth
-def get_sas_token():
-  sas_token = generate_container_sas(
-    account_name='capstorage2025',
-    container_name='patient-records',
-    account_key=os.environ.get('AZURE_ACCESS_KEY'),
-    permission=ContainerSasPermissions(read=True, write=True, delete=True),
-    expiry=datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
-  )
-  return jsonify({'token': sas_token})
+from controllers.motion_file import motion_files
+app.register_blueprint(motion_files)
 
-
-
-
-
-sock = SocketIO(app, cors_allowed_origins=frontend_url)
-
-@sock.on('join')
-def on_join(data):
-  patient_id = data['patient_id']
-  physician_id = data['physician_id']
-  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
-  join_room(chat_id)
-
-@sock.on('leave')
-def on_leave(data):
-  patient_id = data['patient_id']
-  physician_id = data['physician_id']
-  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
-  leave_room(chat_id)
-
-@sock.on('message')
-def on_message(data):
-  patient_id = data['patient_id']
-  physician_id = data['physician_id']
-  chat_id = db.session.query(Chat).filter_by(patient_id=patient_id,physician_id=physician_id).first().id
-  content = data['content']
-  sender = data['sender']
-  chat_message = ChatMessage(chat_id=chat_id,sender=sender,content=content)
-  db.session.add(chat_message)
-  db.session.commit()
-  chat_json = chat_message.dict()
-  chat_json['timestamp'] = str(chat_json['timestamp'])
-  sock.send(chat_json,to=chat_id)
+socket.init_app(app=app, cors_allowed_origins=frontend_url)
 
 
 @app.errorhandler(AuthError)
@@ -109,6 +69,18 @@ def private():
   response = "Hello from a private endpoint! You need to be authenticated to see this."
   return jsonify(message=response)
 
+@app.route('/sas_token',methods=['GET'])
+@requires_auth
+def get_sas_token():
+  sas_token = generate_container_sas(
+    account_name='capstorage2025',
+    container_name='patient-records',
+    account_key=os.environ.get('AZURE_ACCESS_KEY'),
+    permission=ContainerSasPermissions(read=True, write=True, delete=True),
+    expiry=datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
+  )
+  return jsonify({'token': sas_token})
+
 
 if __name__ == '__main__':
-  sock.run(app,debug=True,port=8000)
+  socket.run(app,debug=True,port=8000)

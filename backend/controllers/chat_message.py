@@ -1,7 +1,5 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
-from models.physician import Physician
-from models.patient import Patient
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from auth import requires_auth

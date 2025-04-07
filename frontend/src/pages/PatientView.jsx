@@ -19,11 +19,11 @@ import {
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getMessages } from '@/apis/messagesService';
-import { socket } from '@/socket';
+import { useSocket } from '@/components/SocketProvider';
 import AccessibilityMenu from '../components/AccessibilityMenu';
 import MedicalRecords from '../components/MedicalRecords';
 
-const PatientView = () => {
+const PatientView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   
@@ -56,6 +56,7 @@ const PatientView = () => {
     { id: 2, name: "Weekly Exercise Goals", progress: 75 },
     { id: 3, name: "Physical Therapy Sessions", progress: 60 },
   ];
+  const socket = useSocket()
 
   // Auto-scroll to bottom when messages change or tab switches to messages
   useEffect(() => {
@@ -111,7 +112,7 @@ const PatientView = () => {
       try {
         // get messages here
         const token = await getAccessTokenSilently()
-        const response = await getMessages({'patient_id':1,'physician_id':1},token)
+        const response = await getMessages({'patient_id':userInfo.id,'physician_id':userInfo.physician.id},token)
         const data = await response.json()
         if(response.ok){
           setMessages(data);
@@ -150,7 +151,7 @@ const PatientView = () => {
       }
     }
     socket.on('message', onMessageEvent)
-    socket.emit('join',{'patient_id':1,'physician_id':1})
+    socket.emit('join',{'patient_id':userInfo.id,'physician_id':userInfo.physician.id})
 
     return () => {
       socket.off('message', onMessageEvent)
@@ -163,10 +164,10 @@ const PatientView = () => {
     try {
       // create message
       const newMessageObj = {
-        'patient_id': 1,
-        'physician_id': 1,
+        'patient_id': userInfo.id,
+        'physician_id': userInfo.physician.id,
         'content': newMessage,
-        'sender': 0
+        'sender': userInfo.id
       }
       socket.emit('message', newMessageObj)
       setNewMessage(""); 
@@ -506,7 +507,7 @@ const PatientView = () => {
                 
                 {/* MedicalRecords component */}
                 <MedicalRecords 
-                  patientId={1} 
+                  patientId={userInfo.id} 
                   initialSelectedType={selectedDocumentType} 
                 />
               </div>

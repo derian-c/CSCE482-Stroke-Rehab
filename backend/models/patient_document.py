@@ -22,8 +22,8 @@ class PatientDocument(Base):
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
     updatedAt = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    patient_id = Column(Integer, ForeignKey('patients.id'))
-    patient = relationship("Patient", back_populates="patient_documents")
+    patient_id = Column(Integer, ForeignKey('users.id'))
+    patient = relationship('User', back_populates="patient_documents")
 
     def __repr__(self) -> str:
         return f'PatientDocument({self.dict()})'

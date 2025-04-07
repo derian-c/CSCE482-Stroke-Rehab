@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
 from models.patient_document import PatientDocument, DocumentType
-from models.patient import Patient
+from models.user import User
 from auth import requires_auth
 from datetime import datetime
 
@@ -47,8 +47,8 @@ def create_patient_document():
         return jsonify({'error': 'Invalid document type'}), 400
 
     # Validate patient exists
-    patient = db.session.get(Patient, request_data['patient_id'])
-    if not patient:
+    patient = db.session.get(User, request_data['patient_id'])
+    if not patient or not patient.is_patient:
         return jsonify({'error': f'No patient found with id: {request_data["patient_id"]}'}), 404
 
     # Create document

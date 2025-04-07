@@ -8,7 +8,7 @@ def test_chat_message_get(populate_database,app):
 
 def test_chat_message_create(populate_database,app):
   with app.app_context():
-    chat_message = ChatMessage(chat_id=1,sender=0,content='content')
+    chat_message = ChatMessage(chat_id=1,sender=1,content='content')
     db.session.add(chat_message)
     db.session.commit()
     assert chat_message.id == 2

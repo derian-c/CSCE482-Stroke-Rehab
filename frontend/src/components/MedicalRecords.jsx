@@ -174,6 +174,10 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
 
 
     await blobClient.uploadData(file)
+    
+    await blobClient.setHTTPHeaders({
+      blobContentDisposition: 'inline'
+    })
     return `https://${storageAccountName}.blob.core.windows.net/${containerName}/${newFilename}`
   };
 
@@ -201,8 +205,10 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
   };
 
   // Open document in new tab
-  const viewDocument = (url, documentName) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const viewDocument = async (url, documentName) => {
+    const token = await getAccessTokenSilently()
+    const sas_token = (await (await getSasToken(token)).json()).token
+    window.open(`${url}?${sas_token}`, '_blank', 'noopener,noreferrer');
   };
 
   // Document container component
@@ -218,9 +224,12 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
       >
         <div 
           className="flex items-start justify-between cursor-pointer"
-          onClick={() => {}/*setSelectedType(isSelected ? null : type)*/}
         >
-          <div className="flex items-start">
+          <div 
+            className="flex items-start"
+            /*Moved this here for now to prevent upload button from being blocked*/
+            onClick={() => setSelectedType(isSelected ? null : type)}
+          >
             <Icon className="h-5 w-5 mr-3 text-blue-600 mt-1 flex-shrink-0" aria-hidden="true" />
             <div>
               <h3 className="font-medium text-gray-900">{title}</h3>

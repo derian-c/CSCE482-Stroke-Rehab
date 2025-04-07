@@ -211,16 +211,18 @@ const PhysicianView = ({userInfo}) => {
       
       const simplePatient = {
         id: newPatient.id,
-        name: `${patientData.first_name} ${patientData.last_name}`,
+        first_name: newPatient.first_name,
+        last_name: newPatient.last_name,
         messages: []
       };
       
-      console.log("Adding new patient:", simplePatient);
+      // console.log("Adding new patient:", simplePatient);
       
       // Add to patients list
-      setPatients(prevPatients => [...prevPatients, simplePatient]);
+      userInfo.patients.push(simplePatient);
+      setPatients(userInfo.patients);
       
-      showNotification(`Patient ${patientData.first_name} ${patientData.last_name} added successfully`, "success");
+      showNotification(`Patient ${newPatient.first_name} ${newPatient.last_name} added successfully`, "success");
       return newPatient;
     } catch (error) {
       console.error("Error adding patient:", error);

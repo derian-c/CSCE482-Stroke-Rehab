@@ -149,9 +149,9 @@ const DocumentDetailView = () => {
     }
   };
   
-  // Placeholder for file upload - replace with real implementation
+  // Placeholder for file upload
   const uploadFileToStorage = async (file) => {
-    // In a real implementation, this would upload to S3, Firebase, etc.
+    // blob
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(`https://storage.example.com/${Date.now()}-${file.name}`);

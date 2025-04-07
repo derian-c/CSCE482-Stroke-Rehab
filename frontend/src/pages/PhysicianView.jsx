@@ -163,7 +163,7 @@ const PhysicianView = ({userInfo}) => {
 
       // If the new message is not from the physician, don't automatically mark it as read
       // unless the messages tab is currently active
-      if (data.sender != 1) {
+      if (data.sender != userInfo.id) {
         if (activeTab === "messages") {
           // If messages tab is active, mark the new message as read
           setReadMessageIds(prevReadIds => {
@@ -292,7 +292,7 @@ const PhysicianView = ({userInfo}) => {
   const getUnreadMessagesCount = (patient) => {
     if (!patient.messages) return 0;
     return patient.messages.filter(msg =>
-      msg.sender != 1 && !readMessageIds.includes(msg.id)
+      msg.sender != userInfo.id && !readMessageIds.includes(msg.id)
     ).length;
   };
 
@@ -667,21 +667,21 @@ const PhysicianView = ({userInfo}) => {
                           {selectedPatient.messages.map((msg, index) => (
                             <div
                               key={index}
-                              className={`flex ${msg.sender == 1 ? 'justify-end' : 'justify-start'}`}
+                              className={`flex ${msg.sender == userInfo.id ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-[80%] rounded-lg p-3 ${msg.sender == 1
+                                className={`max-w-[80%] rounded-lg p-3 ${msg.sender == userInfo.id
                                   ? 'bg-blue-600 text-white'
                                   : 'bg-white border border-gray-300 text-black'
                                   }`}
                               >
                                 <div className="flex items-center">
                                   <span className="font-medium text-sm">
-                                    {msg.sender == 1 ? 'You' : 'Patient'}
+                                    {msg.sender == userInfo.id ? 'You' : 'Patient'}
                                   </span>
                                 </div>
                                 <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
-                                <div className={`text-xs mt-1 text-right ${msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
+                                <div className={`text-xs mt-1 text-right ${msg.sender == userInfo.id ? 'text-blue-200' : 'text-gray-400'
                                   }`}>
                                   {formatMessageDate(msg.timestamp)}
                                 </div>

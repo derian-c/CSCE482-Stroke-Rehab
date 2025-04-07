@@ -148,7 +148,7 @@ const PatientView = ({userInfo}) => {
       setMessages(messages => [...messages, data])
       
       // If the new message is not from the current user, don't automatically mark it as read
-      if (data.sender != 0) {
+      if (data.sender != userInfo.id) {
         // We don't add it to readMessageIds here, so it will be counted as unread
         // and will trigger the notification dot
         
@@ -214,7 +214,7 @@ const PatientView = ({userInfo}) => {
   
   // Check for unread messages (those not in readMessageIds array)
   const unreadMessages = messages.filter(msg => 
-    msg.sender != 0 && !readMessageIds.includes(msg.id)
+    msg.sender != userInfo.id && !readMessageIds.includes(msg.id)
   ).length;
   
   // Update localStorage whenever readMessageIds changes
@@ -442,7 +442,7 @@ const PatientView = ({userInfo}) => {
                   {messages && messages.length > 0 ? (
                     <div className="space-y-4">
                       {messages.map((msg, index) => {
-                        const isFromMe = msg.sender == 0;
+                        const isFromMe = msg.sender == userInfo.id;
                         
                         return (
                           <div

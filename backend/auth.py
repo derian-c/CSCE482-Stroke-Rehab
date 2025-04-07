@@ -2,6 +2,7 @@ import json
 import os
 from urllib.request import urlopen
 from functools import wraps
+import requests
 
 from flask import request, g
 from jose import jwt,exceptions
@@ -96,8 +97,10 @@ def requires_auth(f):
                                 "description":
                                     "Unable to parse authentication"
                                     " token."}, 401)
-
-            g.current_user = payload
+            
+            g.current_user_roles = payload.get('https://yourapp.com/roles')
+            g.token_payload = payload
+            
             return f(*args, **kwargs)
         raise AuthError({"code": "invalid_header",
                         "description": "Unable to find appropriate key"}, 401)

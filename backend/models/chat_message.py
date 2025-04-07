@@ -10,11 +10,12 @@ class ChatMessage(Base):
   __tablename__ = 'chat_messages'
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  sender: Mapped[int] # 0 is patient, 1 is physician
-  content: Mapped[str]
+  sender: Mapped[int] = mapped_column(ForeignKey('users.id'))
   chat_id: Mapped[int] = mapped_column(ForeignKey('chats.id'))
-  chat: Mapped['Chat'] = relationship(back_populates='chat_messages')
+  content: Mapped[str]
   timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+  chat: Mapped['Chat'] = relationship(back_populates='chat_messages')
 
 
   def __repr__(self) -> str:

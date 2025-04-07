@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { getPatients } from "@/apis/patientService";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { getPatients, createPatientByPhysician } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -15,41 +15,30 @@ import {
   PanelRight,
   ChevronRight,
   BarChart,
-  MessageCircle
+  MessageCircle,
+  UserPlus
 } from "lucide-react";
-import { socket } from '@/socket'
+import { useSocket } from '@/components/SocketProvider'
 import { getMessages } from '@/apis/messagesService'
+import { getMotionFiles } from "../apis/motionFileService";
+import MotionReadingsTab from '@/components/MotionReadingsTab'
+import MotionFilesTab from '@/components/MotionFilesTab'
+import AccessibilityMenu from '@/components/AccessibilityMenu';
+import AddPatient from '@/components/AddPatient';
+import NotificationToast from "../components/NotificationToast";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import { getSasToken } from '@/apis/sasTokenService'
 
-const PhysicianView = () => {
-  const { user, logout } = useAuth0();
-  const [patients, setPatients] = useState([
-    {
-      id: 0,
-      name: "",
-      age: 76,
-      lastSession: "2025-02-15",
-      exerciseQuality: {
-        shoulder: "Good range of motion, slight tension",
-        elbow: "Limited extension",
-        wrist: "Improved flexibility",
-        knee: "Normal range of motion",
-      },
-      messages: [] // will be populated from API
-    },
-    {
-      id: 1,
-      name: "",
-      age: 81,
-      lastSession: "2025-02-14",
-      exerciseQuality: {
-        shoulder: "Restricted movement",
-        elbow: "Good progress",
-        wrist: "Needs attention",
-        knee: "Strong improvement",
-      },
-      messages: [] // will be populated from API
-    },
-  ]);
+const PhysicianView = ({userInfo}) => {
+  const { user, logout, getAccessTokenSilently } = useAuth0();
+  const [patients, setPatients] = useState([]);
+
+  // State to track which messages have been read - stored in localStorage
+  const [readMessageIds, setReadMessageIds] = useState(() => {
+    // Initialize from localStorage if available
+    const savedReadIds = localStorage.getItem('physicianReadMessageIds');
+    return savedReadIds ? JSON.parse(savedReadIds) : [];
+  });
 
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [message, setMessage] = useState("");
@@ -57,23 +46,104 @@ const PhysicianView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("model"); // Options: "model", "messages"
-  const selectedPatientRef = useRef()
+  const [jointTab, setJointTab] = useState("readings");
+  const selectedPatientRef = useRef();
+  const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
+  const [showAddPatient, setShowAddPatient] = useState(false);
+
+  const [patientMotionFiles, setPatientMotionFiles] = useState([]);
+  const [selectedMotionFile, setSelectedMotionFile] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    type: "warning",
+    onConfirm: () => {}
+  });
+
+  const  [sasToken, setSasToken] = useState(null)
+
+  const socket = useSocket()
 
   useEffect(() => {
     selectedPatientRef.current = selectedPatient
-  }, [selectedPatient])
+  }, [selectedPatient]);
+
+  // Scroll to bottom of messages when new messages are added or when switching to messages tab
+  useEffect(() => {
+    if (activeTab === "messages" && selectedPatient) {
+      scrollToBottom();
+    }
+  }, [selectedPatient?.messages, activeTab]);
+
+  // Update localStorage whenever readMessageIds changes
+  useEffect(() => {
+    localStorage.setItem('physicianReadMessageIds', JSON.stringify(readMessageIds));
+  }, [readMessageIds]);
+
+  const scrollToBottom = () => {
+    // Use setTimeout to ensure the DOM has updated before scrolling
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        // Get the messages container
+        const messageContainer = messagesEndRef.current.closest('.overflow-y-auto');
+        if (messageContainer) {
+          // Scroll the container instead of the entire page
+          messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+      }
+    }, 100);
+  };
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+  };
+
+  const showConfirmation = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel", type = "warning") => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      type,
+      onConfirm
+    });
+  };
 
   const handlePatientClick = (patient) => {
-    if(selectedPatient != null){
-      socket.emit('leave',{'patient_id':selectedPatient.id,'physician_id':1})
+    if (selectedPatient != null) {
+      socket.emit('leave', { patient_id: selectedPatient.id, physician_id: userInfo.id })
     }
     setSelectedPatient(patient);
-    socket.emit('join',{'patient_id':patient.id,'physician_id':1})
+    socket.emit('join', { patient_id: patient.id, physician_id: userInfo.id })
     setShowDetail(true);
-    
+
     // On mobile, collapse sidebar when patient is selected
     if (window.innerWidth < 768) {
       setSidebarCollapsed(true);
+    }
+  };
+
+  // Handle tab switching - mark messages as read when messages tab is selected
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "messages" && selectedPatient) {
+      // Mark all of the selected patient's messages as read
+      const messageIds = selectedPatient.messages.map(msg => msg.id);
+      setReadMessageIds(prevReadIds => {
+        // Combine previous read IDs with all current message IDs
+        const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+        // Save to localStorage
+        localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+        return combinedIds;
+      });
+
+      // Scroll to bottom
+      scrollToBottom();
     }
   };
 
@@ -82,39 +152,94 @@ const PhysicianView = () => {
       const patient = selectedPatientRef.current
       setPatients(patients => {
         const updatedPatients = patients.map(p => {
-          if(p.id == patient.id){
-            setSelectedPatient(selectedPatient => {return {...p, messages: [...(p.messages),data]}})
-            return {...p, messages: [...(p.messages),data]}
+          if (p.id == patient.id) {
+            setSelectedPatient(() => { return { ...p, messages: [...(p.messages), data] } })
+            return { ...p, messages: [...(p.messages), data] }
           }
           return p
         })
         return updatedPatients
       })
+
+      // If the new message is not from the physician, don't automatically mark it as read
+      // unless the messages tab is currently active
+      if (data.sender != userInfo.id) {
+        if (activeTab === "messages") {
+          // If messages tab is active, mark the new message as read
+          setReadMessageIds(prevReadIds => {
+            const combinedIds = [...new Set([...prevReadIds, data.id])];
+            localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+            return combinedIds;
+          });
+        }
+        // If messages tab is not active, the message remains unread
+      }
     }
     socket.on('message', onMessageEvent)
     return () => {
       socket.off('message', onMessageEvent)
     }
-  }, []);
+  }, [activeTab]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-    
+
     try {
       // create message
       const newMessageObj = {
-        'patient_id': 1,
-        'physician_id': 1,
-        'content': message,
-        'sender': 1
+        patient_id: selectedPatient.id,
+        physician_id: userInfo.id,
+        content: message,
+        sender: userInfo.id
       }
       socket.emit('message', newMessageObj)
-      
     } catch (error) {
       console.error("Error sending message:", error);
     }
+    setMessage('')
   };
 
+  // Handle adding a new patient
+  const handleAddPatient = async (patientData) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await createPatientByPhysician(userInfo.id, patientData, token);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add patient");
+      }
+      
+      const newPatient = await response.json();
+      
+      const simplePatient = {
+        id: newPatient.id,
+        first_name: newPatient.first_name,
+        last_name: newPatient.last_name,
+        messages: []
+      };
+      
+      // console.log("Adding new patient:", simplePatient);
+      
+      // Add to patients list
+      userInfo.patients.push(simplePatient);
+      setPatients(userInfo.patients);
+      
+      showNotification(`Patient ${newPatient.first_name} ${newPatient.last_name} added successfully`, "success");
+      return newPatient;
+    } catch (error) {
+      console.error("Error adding patient:", error);
+      throw error;
+    }
+  };
+
+  // Handle Enter key press to send message
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent new line
+      handleSendMessage();
+    }
+  };
 
   const getQualityColor = (quality) => {
     if (quality.toLowerCase().includes("good") || quality.toLowerCase().includes("strong") || quality.toLowerCase().includes("improved")) {
@@ -132,40 +257,154 @@ const PhysicianView = () => {
     return date.toLocaleString();
   };
 
+  // Helper functions for joint analysis
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const getJointStatusColor = (readings) => {
+    const range = readings.max - readings.min;
+    const normalRange = readings.normal.max - readings.normal.min;
+    const percentage = (range / normalRange) * 100;
+    
+    if (percentage >= 90) return "bg-green-500";
+    if (percentage >= 70) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+
+  const getJointTypeColor = (jointType) => {
+    switch(jointType.toLowerCase()) {
+      case 'shoulder': return 'bg-blue-600';
+      case 'elbow': return 'bg-green-600';
+      case 'wrist': return 'bg-purple-600';
+      case 'knee': return 'bg-amber-600';
+      default: return 'bg-gray-600';
+    }
+  };
+
+  const handleViewFile = (file) => {
+    console.log("Opening file:", file);
+  };
+
+  // Check for unread messages for a specific patient
+  const getUnreadMessagesCount = (patient) => {
+    if (!patient.messages) return 0;
+    return patient.messages.filter(msg =>
+      msg.sender != userInfo.id && !readMessageIds.includes(msg.id)
+    ).length;
+  };
+
   useEffect(() => {
     async function loadPatients() {
-      const response = await getPatients();
-      if(response.ok){
-        const _patients = await response.json();
-        let patientsCopy = [...patients];
+      const token = await getAccessTokenSilently()
+      // const _patients = userInfo.patients
+      // let patientsCopy = [...patients];
+      console.log(userInfo.patients)
+      for (let i = 0; i < userInfo.patients.length; i++) {
         
-        for (let i = 0; i < Math.min(2, _patients.length); i++) {
-          patientsCopy[i].id = _patients[i].id;
-          patientsCopy[i].name = _patients[i].first_name + ' ' + _patients[i].last_name;
-          
-          // fetch patient messages
-          try {
-            const response = await getMessages({'physician_id':1, 'patient_id':i+1});
-            const data = await response.json()
-            patientsCopy[i].messages = data;
-          } catch (error) {
-            console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
-            patientsCopy[i].messages = [];
+
+        // fetch patient messages
+        try {
+          const response = await getMessages({ 'physician_id': userInfo.id, 'patient_id': userInfo.patients[i].id }, token);
+          const data = await response.json()
+          userInfo.patients[i].messages = data;
+
+          // If this patient is already selected and messages tab is active, mark messages as read
+          if (selectedPatient && selectedPatient.id === userInfo.patients[i].id && activeTab === "messages") {
+            const messageIds = data.map(msg => msg.id);
+            setReadMessageIds(prevReadIds => {
+              const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
+              localStorage.setItem('physicianReadMessageIds', JSON.stringify(combinedIds));
+              return combinedIds;
+            });
           }
+        } catch (error) {
+          console.error(`Error fetching messages for patient ${userInfo.patients[i].id}:`, error);
+          userInfo.patients[i].messages = [];
         }
-        
-        setPatients(patientsCopy);
-      } else {
-        console.error("Failed to fetch patients");
       }
+
+      setPatients(userInfo.patients);
+      // } else {
+      //   console.error("Failed to fetch patients");
+      // }
       setIsLoading(false);
     }
 
     loadPatients();
-  }, []);
+  }, [activeTab, selectedPatient]);
 
+  useEffect(() => {
+    async function fetchPatientMotionFiles() {
+      if (!selectedPatient) return;
+
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await getMotionFiles(selectedPatient.id, token);
+        if (response.ok) {
+          const files = await response.json();
+          setPatientMotionFiles(files);
+          // Optionally select the first file by default
+          const sas_token = (await (await getSasToken('motion-files',token)).json()).token
+          setSasToken(sas_token)
+          console.log(sas_token)
+          if (files.length > 0) {
+            setSelectedMotionFile(files[0]);
+          } else {
+            setSelectedMotionFile(null);
+          }
+        } else {
+          console.error("Failed to fetch motion files");
+          setPatientMotionFiles([]);
+          setSelectedMotionFile(null);
+        }
+      } catch (error) {
+        console.error("Error fetching motion files:", error);
+        setPatientMotionFiles([]);
+        setSelectedMotionFile(null);
+      }
+    }
+
+    fetchPatientMotionFiles();
+  }, [selectedPatient]);
+
+  async function handleSetSelectedFile(e){
+
+  }
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
+      {/* Notification Toast */}
+      {notification && (
+        <NotificationToast
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        type={confirmDialog.type}
+      />
+      {/* Add Patient Popup */}
+      <AddPatient 
+        isOpen={showAddPatient}
+        onClose={() => setShowAddPatient(false)}
+        onAddPatient={handleAddPatient}
+        showNotification={showNotification}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
@@ -175,9 +414,9 @@ const PhysicianView = () => {
           </div>
           <div className="flex items-center">
             {user?.picture ? (
-              <img 
-                src={user.picture} 
-                alt="Profile" 
+              <img
+                src={user.picture}
+                alt="Profile"
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-full mr-2 sm:mr-3"
               />
             ) : (
@@ -185,8 +424,8 @@ const PhysicianView = () => {
                 {user?.name?.charAt(0) || "Dr"}
               </div>
             )}
-            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {user?.name || "Physician"}</span>
-            <button 
+            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {userInfo.first_name + " " + userInfo.last_name || "Physician"}</span>
+            <button
               onClick={() => logout({ returnTo: window.location.origin })}
               className="text-gray-500 hover:text-red-600 transition-colors"
               title="Logout"
@@ -205,7 +444,7 @@ const PhysicianView = () => {
               <Users className="h-5 w-5 mr-2 text-blue-600" />
               Patients
             </h2>
-            <button 
+            <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="text-gray-500 hover:text-blue-600 transition-colors"
             >
@@ -213,36 +452,61 @@ const PhysicianView = () => {
             </button>
           </div>
           <div className={`divide-y overflow-y-auto ${sidebarCollapsed ? 'hidden md:block' : 'block'}`}>
-            {patients.map((patient) => (
-              <button
-                key={patient.id}
-                onClick={() => handlePatientClick(patient)}
-                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${
-                  selectedPatient?.id === patient.id
+            {patients.map((patient) => {
+              const unreadCount = getUnreadMessagesCount(patient);
+              return (
+                <button
+                  key={patient.id}
+                  onClick={() => handlePatientClick(patient)}
+                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${selectedPatient?.id === patient.id
                     ? "bg-blue-50 text-blue-700"
                     : "text-gray-700 hover:text-gray-900"
-                } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
-              >
-                {sidebarCollapsed ? (
-                  <User className="h-6 w-6" />
-                ) : (
-                  <>
-                    <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
-                    <div className="overflow-hidden">
-                      <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.name}</div>
-                      <div className="text-xs text-gray-500 flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {patient.lastSession}
+                    } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
+                >
+                  {sidebarCollapsed ? (
+                    <User className="h-6 w-6" />
+                  ) : (
+                    <>
+                      <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
+                      <div className="overflow-hidden">
+                        <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.first_name + " " + patient.last_name}</div>
+                        <div className="text-xs text-gray-500 flex items-center">
+                          
+                        </div>
                       </div>
-                    </div>
-                    {patient.messages && patient.messages.some(msg => !msg.isRead && msg.senderId !== user?.sub) && (
-                      <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
-                    )}
-                    <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
-                  </>
-                )}
+                      {unreadCount > 0 && (
+                        <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
+                      )}
+                      <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                    </>
+                  )}
+                </button>
+              );
+            })}
+            
+            {/* Add Patient Button - Expanded Sidebar */}
+            <div className={`p-3 border-t mt-auto ${sidebarCollapsed ? 'hidden md:hidden' : 'block'}`}>
+              <button
+                onClick={() => setShowAddPatient(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-md py-2 px-4 flex items-center justify-center transition-colors"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add New Patient
               </button>
-            ))}
+            </div>
+                    
+            {/* Add Patient Button - Collapsed Sidebar */}
+            <div className={`p-3 border-t mt-auto ${sidebarCollapsed ? 'block md:block' : 'hidden'}`}>
+              <button
+                onClick={() => setShowAddPatient(true)}
+                className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-md p-2"
+                title="Add New Patient"
+              >
+                <UserPlus className="h-5 w-5" />
+              </button>
+            </div>
+
+
           </div>
         </div>
 
@@ -254,42 +518,37 @@ const PhysicianView = () => {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                   <User className="h-6 w-6 mr-2 text-blue-600" />
-                  {selectedPatient.name}
+                  {selectedPatient.first_name + " " + selectedPatient.last_name}
                   <span className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
                     Age: {selectedPatient.age}
                   </span>
                 </h2>
                 <p className="text-gray-600 flex items-center mt-2">
-                  <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                  Last session: {selectedPatient.lastSession}
+                  
                 </p>
                 <div className="mt-4 border-t pt-4">
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setActiveTab("model")}
-                      className={`px-3 py-2 rounded-md flex items-center ${
-                        activeTab === "model" 
-                          ? "bg-blue-50 text-blue-700 font-medium" 
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      onClick={() => handleTabChange("model")}
+                      className={`px-3 py-2 rounded-md flex items-center ${activeTab === "model"
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                        }`}
                     >
                       <Activity className="h-4 w-4 mr-2" />
                       Patient Model
                     </button>
                     <button
-                      onClick={() => setActiveTab("messages")}
-                      className={`px-3 py-2 rounded-md flex items-center ${
-                        activeTab === "messages" 
-                          ? "bg-blue-50 text-blue-700 font-medium" 
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      onClick={() => handleTabChange("messages")}
+                      className={`px-3 py-2 rounded-md flex items-center ${activeTab === "messages"
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                        }`}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Messages
-                      {selectedPatient.messages && selectedPatient.messages.some(msg => !msg.isRead && msg.senderId !== user?.sub) && (
-                        <span className="ml-2 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                          {selectedPatient.messages.filter(msg => !msg.isRead && msg.senderId !== user?.sub).length}
-                        </span>
+                      {getUnreadMessagesCount(selectedPatient) > 0 && (
+                        <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
                       )}
                     </button>
                   </div>
@@ -306,8 +565,33 @@ const PhysicianView = () => {
                         <Activity className="h-5 w-5 mr-2 text-blue-600" />
                         Patient Model
                       </h3>
+
+                      {/* Motion File Selector */}
+                      <div className="flex items-center">
+                        <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                        <select
+                          className="border border-gray-300 rounded-md text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={selectedMotionFile?.id || ""}
+                          onChange={async (e) => {
+                            const fileId = e.target.value;
+                            const file = patientMotionFiles.find(f => f.id.toString() === fileId);
+                            const token = await getAccessTokenSilently()
+                            const sas_token = (await (await getSasToken('motion-files',token)).json()).token
+                            setSasToken(sas_token)
+                            setSelectedMotionFile(file);
+                          }}
+                        >
+                          <option value="">Select motion file</option>
+                          {patientMotionFiles.map(file => (
+                            <option key={file.id} value={file.id}>
+                              {file.name} ({file.type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-                        <PatientModel />
+                        {selectedMotionFile && sasToken ?<PatientModel file={selectedMotionFile} token={sasToken}/>:null}
                       </div>
                     </div>
 
@@ -316,19 +600,56 @@ const PhysicianView = () => {
                         <BarChart className="h-5 w-5 mr-2 text-blue-600" />
                         Joint Analysis
                       </h3>
-                      <div className="space-y-4">
-                        {Object.entries(selectedPatient.exerciseQuality).map(
-                          ([joint, quality]) => (
-                            <div key={joint} className="border-b pb-3">
-                              <div className="font-medium text-gray-900 capitalize flex items-center">
-                                <span className={`h-2 w-2 rounded-full mr-2 ${getQualityColor(quality).replace('text-', 'bg-')}`}></span>
-                                {joint}
-                              </div>
-                              <div className={`text-sm mt-1 ${getQualityColor(quality)}`}>{quality}</div>
-                            </div>
-                          )
-                        )}
+                      
+                      <div className="mb-4 border-b">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setJointTab("readings")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "readings" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            Motion Readings
+                          </button>
+                          <button
+                            onClick={() => setJointTab("files")}
+                            className={`px-3 py-2 rounded-t-md flex items-center ${
+                              jointTab === "files" 
+                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Motion Files
+                          </button>
+                        </div>
                       </div>
+                      
+                      {jointTab === "readings" && (
+                        <MotionReadingsTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          getJointStatusColor={getJointStatusColor}
+                        />
+                      )}
+                      
+                      {jointTab === "files" && (
+                        <MotionFilesTab 
+                          selectedPatient={selectedPatient}
+                          formatDate={formatDate}
+                          handleViewFile={handleViewFile}
+                        />
+                      )}
+                            
+                            {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
+                              <div className="text-center py-8 text-gray-500">
+                                <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                                <p>No motion files available</p>
+                              </div>
+                            )}
                     </div>
                   </div>
                 </>
@@ -346,29 +667,29 @@ const PhysicianView = () => {
                           {selectedPatient.messages.map((msg, index) => (
                             <div
                               key={index}
-                              className={`flex ${msg.sender == 1 ? 'justify-end' : 'justify-start'}`}
+                              className={`flex ${msg.sender == userInfo.id ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-[80%] rounded-lg p-3 ${
-                                  msg.sender == 1
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white border border-gray-300 text-black'
-                                }`}
+                                className={`max-w-[80%] rounded-lg p-3 ${msg.sender == userInfo.id
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white border border-gray-300 text-black'
+                                  }`}
                               >
                                 <div className="flex items-center">
                                   <span className="font-medium text-sm">
-                                    {msg.sender == 1 ? 'You' : 'Patient'}
+                                    {msg.sender == userInfo.id ? 'You' : 'Patient'}
                                   </span>
                                 </div>
-                                <p className="mt-1">{msg.content}</p>
-                                <div className={`text-xs mt-1 text-right ${
-                                  msg.sender == 1 ? 'text-blue-200' : 'text-gray-400'
-                                }`}>
+                                <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
+                                <div className={`text-xs mt-1 text-right ${msg.sender == userInfo.id ? 'text-blue-200' : 'text-gray-400'
+                                  }`}>
                                   {formatMessageDate(msg.timestamp)}
                                 </div>
                               </div>
                             </div>
                           ))}
+                          {/* Invisible div at the end for auto-scrolling */}
+                          <div ref={messagesEndRef} />
                         </div>
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-500">
@@ -378,11 +699,12 @@ const PhysicianView = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-4">
                       <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Type your message here..."
                         className="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 
                           text-gray-900 
@@ -411,7 +733,9 @@ const PhysicianView = () => {
           )}
         </div>
       </div>
-    </div>
+      
+      <AccessibilityMenu />
+    </div >
   );
 };
 

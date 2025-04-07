@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from extensions import db
 from models.user import User
 from models.patient_physician import PatientPhysician
@@ -73,9 +73,9 @@ def create_patient():
                               headers={'Authorization': 'Bearer '+management_token},
                               params={'email': email_address}).json()
   # Update user's roles in Auth0
-  if auth0_users:
+  if auth0_users and 'Patient' not in g.current_user_roles:
     pending = False
-    role = os.environ.get('AUTH0_ADMIN_ROLE_ID')
+    role = os.environ.get('AUTH0_PATIENT_ROLE_ID')
     requests.post('https://'+AUTH0_DOMAIN+'/api/v2/roles/'+role+'/users',
                       headers={'Authorization': 'Bearer '+management_token},
                       json={'users': [user['user_id'] for user in auth0_users]})

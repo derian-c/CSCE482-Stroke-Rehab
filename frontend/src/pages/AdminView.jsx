@@ -31,7 +31,6 @@ import {
 function AdminView({userInfo}) {
   const { user, getAccessTokenSilently, isLoading, logout } = useAuth0();
 
-  const [canEnter, setCanEnter] = useState(false);
   const navigate = useNavigate();
   const { data, loading } = useFetchProtectedData("/api/private");
   const [msg, setmsg] = useState("loading");
@@ -65,36 +64,12 @@ function AdminView({userInfo}) {
     };
     setActivityLog([newActivityLog, ...activityLog]);
     
-    setNotification({
-      type: 'info',
-      message: `${hasPermission ? "Removed" : "Added"} ${permission} permission for ${physician.name}`
-    });
-    
     const returnUrl = window.location.origin;
     
     // Log out using Auth0 and redirect to the appropriate home page
     logout({ returnTo: returnUrl });
   };
 
-  // check perms
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        if (isLoading) return;
-        const accessToken = await getAccessTokenSilently();
-        const outPutRoles = getUsersRole(user, accessToken);
-        setRoles(outPutRoles);
-        const permission = isAdmin(outPutRoles);
-        permission ? setCanEnter(true) : navigate("/");
-      } catch (error) {
-        console.error("Error checking permissions", error);
-        setCanEnter(false);
-      }
-    };
-    checkAccess();
-  }, [isLoading, user, getAccessTokenSilently, navigate]);
-
-  // get API meesage
   useEffect(() => {
     const getMessage = async () => {
       try {
@@ -137,9 +112,8 @@ function AdminView({userInfo}) {
         setIsLoadingPhysicians(false);
       }
     };
-
-    if (canEnter) fetchPhysicians();
-  }, [canEnter, getAccessTokenSilently]);
+    fetchPhysicians()
+  }, [getAccessTokenSilently]);
 
   // fetch admins from API
   useEffect(() => {
@@ -160,29 +134,26 @@ function AdminView({userInfo}) {
         setIsLoadingAdmins(false);
       }
     };
-
-    if (canEnter) fetchAdmins();
-  }, [canEnter, getAccessTokenSilently]);
+    fetchAdmins()
+  }, [getAccessTokenSilently]);
 
   // mock activity log
   useEffect(() => {
-    if (canEnter) {
-      setActivityLog([
-        {
-          id: 1,
-          user: "System",
-          action: "Loaded physician directory",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          user: user?.name || "Current User",
-          action: "Admin login",
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    }
-  }, [canEnter, user]);
+    setActivityLog([
+      {
+        id: 1,
+        user: "System",
+        action: "Loaded physician directory",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        user: user?.name || "Current User",
+        action: "Admin login",
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }, [user]);
 
   // handle physician invitation submission
   const handleInviteSubmit = async (e) => {
@@ -321,7 +292,7 @@ function AdminView({userInfo}) {
   };
 
   // loading state
-  if ((isLoadingPhysicians || isLoadingAdmins) && canEnter) {
+  if ((isLoadingPhysicians || isLoadingAdmins)) {
     return (
       <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-gray-100">
         <div className="text-xl flex items-center">

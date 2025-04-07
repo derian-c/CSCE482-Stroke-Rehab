@@ -71,13 +71,13 @@ def create_physician():
                               headers={'Authorization': 'Bearer '+management_token},
                               params={'email': email_address}).json()
   # Update user's roles in Auth0
-  if auth0_users:
+  if auth0_users and 'Physician' not in g.current_user_roles:
     pending = False
-    role = os.environ.get('AUTH0_ADMIN_ROLE_ID')
+    role = os.environ.get('AUTH0_PHYSICIAN_ROLE_ID')
     requests.post('https://'+AUTH0_DOMAIN+'/api/v2/roles/'+role+'/users',
                       headers={'Authorization': 'Bearer '+management_token},
                       json={'users': [user['user_id'] for user in auth0_users]})
-  physician = User(first_name=first_name,last_name=last_name,email_address=email_address,is_physician=True)
+  physician = User(first_name=first_name,last_name=last_name,email_address=email_address,is_physician=True,pending=pending)
   db.session.add(physician)
   db.session.commit()
   return jsonify(physician.dict())

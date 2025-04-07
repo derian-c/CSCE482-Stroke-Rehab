@@ -3,28 +3,34 @@ import { isAdmin } from "../apis/isAdmin";
 import { getUsersRole } from "../apis/getUserRole";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
+import { getPhysicians, createPhysician, deletePhysicianByID } from '@/apis/physicianService'
+import { getAdmins } from '@/apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
+import { DeviceManagement } from "../components/DeviceManagement";
+import AccessibilityMenu from '@/components/AccessibilityMenu';
+import NotificationToast from "../components/NotificationToast";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 import {
   UserPlus,
   Users,
   ClipboardList,
-  Settings,
   LogOut,
   Trash2,
   Bell,
-  Moon,
   Shield,
   Database,
   Eye,
   Edit,
   Lock,
-  Save,
   Activity,
+  MonitorSmartphone,
 } from "lucide-react";
 
-function AdminView() {
-  const { user, getAccessTokenSilently, isLoading } = useAuth0();
+
+function AdminView({userInfo}) {
+  const { user, getAccessTokenSilently, isLoading, logout } = useAuth0();
+
   const [canEnter, setCanEnter] = useState(false);
   const navigate = useNavigate();
   const { data, loading } = useFetchProtectedData("/api/private");
@@ -41,12 +47,34 @@ function AdminView() {
   const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   const [error, setError] = useState(null);
   const [roles, setRoles] = useState([]);
-  const [settings, setSettings] = useState({
-    enableNotifications: true,
-    darkMode: false,
-    autoLogout: 30,
-    dataRetentionDays: 90,
+  const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    physicianId: null,
+    physicianName: ""
   });
+
+  // Handle logout functionality
+  const handleLogout = () => {
+    // Add to activity log
+    const newActivityLog = {
+      id: activityLog.length + 1,
+      user: user?.name || "Admin",
+      action: "Logged out",
+      timestamp: new Date().toISOString(),
+    };
+    setActivityLog([newActivityLog, ...activityLog]);
+    
+    setNotification({
+      type: 'info',
+      message: `${hasPermission ? "Removed" : "Added"} ${permission} permission for ${physician.name}`
+    });
+    
+    const returnUrl = window.location.origin;
+    
+    // Log out using Auth0 and redirect to the appropriate home page
+    logout({ returnTo: returnUrl });
+  };
 
   // check perms
   useEffect(() => {
@@ -56,7 +84,6 @@ function AdminView() {
         const accessToken = await getAccessTokenSilently();
         const outPutRoles = getUsersRole(user, accessToken);
         setRoles(outPutRoles);
-        console.log(outPutRoles);
         const permission = isAdmin(outPutRoles);
         permission ? setCanEnter(true) : navigate("/");
       } catch (error) {
@@ -87,9 +114,7 @@ function AdminView() {
       try {
         setIsLoadingPhysicians(true);
         const token = await getAccessTokenSilently();
-        const response = await fetch("/physician/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await getPhysicians(token)
 
         if (!response.ok) throw new Error("Failed to fetch physicians");
 
@@ -122,9 +147,7 @@ function AdminView() {
       try {
         setIsLoadingAdmins(true);
         const token = await getAccessTokenSilently();
-        const response = await fetch("/admins/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await getAdmins(token)
 
         if (!response.ok) throw new Error("Failed to fetch admins");
 
@@ -165,19 +188,13 @@ function AdminView() {
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = await getAccessTokenSilently();
-      const response = await fetch("/physicians/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          first_name: inviteFirstName,
-          last_name: inviteLastName,
-          email_address: inviteEmail,
-        }),
-      });
+      const physicianData = {
+        first_name: inviteFirstName,
+        last_name: inviteLastName,
+        email_address: inviteEmail,
+      }
+      const token = await getAccessTokenSilently()
+      const response = await createPhysician(physicianData, token);
 
       const responseText = await response.text();
 
@@ -215,29 +232,27 @@ function AdminView() {
         };
 
         setActivityLog([newActivityLog, ...activityLog]);
-        alert(
-          `Physician ${inviteFirstName} ${inviteLastName} added successfully`
-        );
+        setNotification({
+          type: 'success',
+          message: `Physician ${inviteFirstName} ${inviteLastName} added successfully`
+        });
       } else {
         throw new Error("Server returned empty response");
       }
     } catch (error) {
       console.error("Error adding physician:", error);
-      alert(`Failed to add physician: ${error.message}`);
+      setNotification({
+        type: 'error',
+        message: `Failed to add physician: ${error.message}`
+      });
     }
   };
 
   // delete physician from system
   const handleDeletePhysician = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this physician?"))
-      return;
-
     try {
-      const token = await getAccessTokenSilently();
-      const response = await fetch(`/physicians/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const token = await getAccessTokenSilently()
+      const response = await deletePhysicianByID(id, token)
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -258,11 +273,26 @@ function AdminView() {
       };
 
       setActivityLog([newActivityLog, ...activityLog]);
-      alert("Physician deleted successfully");
+      setNotification({
+        type: 'success',
+        message: `Physician ${deletedPhysician.name} deleted successfully`
+      });
     } catch (error) {
       console.error("Error deleting physician:", error);
-      alert(`Failed to delete physician: ${error.message}`);
+      setNotification({
+        type: 'error',
+        message: `Failed to delete physician: ${error.message}`
+      });
     }
+  };
+
+  // Show the delete confirmation dialog
+  const showDeleteConfirmation = (id, name) => {
+    setConfirmDialog({
+      isOpen: true,
+      physicianId: id,
+      physicianName: name
+    });
   };
 
   // permissions for physician
@@ -282,17 +312,12 @@ function AdminView() {
     const newActivityLog = {
       id: activityLog.length + 1,
       user: user?.name || "Admin",
-      action: `${
-        hasPermission ? "Removed" : "Added"
-      } ${permission} permission for ${physician.name}`,
+      action: `${hasPermission ? "Removed" : "Added"
+        } ${permission} permission for ${physician.name}`,
       timestamp: new Date().toISOString(),
     };
 
     setActivityLog([newActivityLog, ...activityLog]);
-  };
-
-  const handleSettingChange = (setting, value) => {
-    setSettings({ ...settings, [setting]: value });
   };
 
   // loading state
@@ -321,11 +346,10 @@ function AdminView() {
   const TabButton = ({ tab, icon, label }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
-        activeTab === tab
-          ? "text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-500 hover:text-gray-700"
-      }`}
+      className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${activeTab === tab
+        ? "text-blue-600 border-b-2 border-blue-600"
+        : "text-gray-500 hover:text-gray-700"
+        }`}
     >
       {React.createElement(icon, { className: "h-4 w-4 mr-1" })}
       {label}
@@ -334,6 +358,24 @@ function AdminView() {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
+      {notification && (
+        <NotificationToast
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => handleDeletePhysician(confirmDialog.physicianId)}
+        title="Delete Physician"
+        message={`Are you sure you want to delete ${confirmDialog.physicianName}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -357,6 +399,7 @@ function AdminView() {
               {user?.name || "User"}
             </span>
             <button
+              onClick={handleLogout}
               className="text-gray-500 hover:text-red-600 transition-colors"
               title="Logout"
             >
@@ -385,7 +428,11 @@ function AdminView() {
                 icon={ClipboardList}
                 label="Activity Log"
               />
-              <TabButton tab="settings" icon={Settings} label="Page Settings" />
+              <TabButton
+                tab="deviceManagement"
+                icon={MonitorSmartphone}
+                label="Device Management"
+              />
             </nav>
           </div>
 
@@ -396,7 +443,7 @@ function AdminView() {
               <div className="w-full">
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
                   <UserPlus className="h-5 w-5 mr-2 text-blue-600" />
-                  Add New Physician
+                  Add Physician
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Add a new physician to the system.
@@ -455,26 +502,6 @@ function AdminView() {
                       onChange={(e) => setInviteEmail(e.target.value)}
                       required
                     />
-                  </div>
-
-                  <div className="mb-4">
-                    <label
-                      htmlFor="role"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Role
-                    </label>
-                    <select
-                      id="role"
-                      defaultValue="physician"
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="physician">Physician</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Currently only physician role is supported
-                    </p>
                   </div>
 
                   <button
@@ -596,7 +623,7 @@ function AdminView() {
                             <td className="px-3 py-4 sm:px-6 whitespace-nowrap text-sm">
                               <button
                                 onClick={() =>
-                                  handleDeletePhysician(physician.id)
+                                  showDeleteConfirmation(physician.id, physician.name)
                                 }
                                 className="text-red-600 hover:text-red-900 flex items-center"
                               >
@@ -704,188 +731,14 @@ function AdminView() {
               </div>
             )}
 
-            {/* Settings Tab */}
-            {activeTab === "settings" && (
-              <div className="w-full">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <Settings className="h-5 w-5 mr-2 text-blue-600" />
-                  Page Settings
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Configure system settings and preferences.
-                </p>
-
-                <div className="w-full space-y-6">
-                  {/* Settings sections with their respective icons */}
-                  {[
-                    {
-                      title: "Notifications",
-                      icon: Bell,
-                      content: (
-                        <label className="flex items-center cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              className="sr-only"
-                              checked={settings.enableNotifications}
-                              onChange={() =>
-                                handleSettingChange(
-                                  "enableNotifications",
-                                  !settings.enableNotifications
-                                )
-                              }
-                            />
-                            <div
-                              className={`block w-10 h-6 rounded-full ${
-                                settings.enableNotifications
-                                  ? "bg-blue-600"
-                                  : "bg-gray-400"
-                              }`}
-                            ></div>
-                            <div
-                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                                settings.enableNotifications
-                                  ? "transform translate-x-4"
-                                  : ""
-                              }`}
-                            ></div>
-                          </div>
-                          <div className="ml-3 text-gray-700">
-                            Enable email notifications
-                          </div>
-                        </label>
-                      ),
-                    },
-                    {
-                      title: "Appearance",
-                      icon: Moon,
-                      content: (
-                        <label className="flex items-center cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              className="sr-only"
-                              checked={settings.darkMode}
-                              onChange={() =>
-                                handleSettingChange(
-                                  "darkMode",
-                                  !settings.darkMode
-                                )
-                              }
-                            />
-                            <div
-                              className={`block w-10 h-6 rounded-full ${
-                                settings.darkMode
-                                  ? "bg-blue-600"
-                                  : "bg-gray-400"
-                              }`}
-                            ></div>
-                            <div
-                              className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                                settings.darkMode
-                                  ? "transform translate-x-4"
-                                  : ""
-                              }`}
-                            ></div>
-                          </div>
-                          <div className="ml-3 text-gray-700">Dark mode</div>
-                        </label>
-                      ),
-                    },
-                    {
-                      title: "Security",
-                      icon: Shield,
-                      content: (
-                        <div className="mb-4">
-                          <label
-                            htmlFor="autoLogout"
-                            className="block text-sm font-medium text-gray-700 mb-1 flex items-center"
-                          >
-                            <LogOut className="h-3 w-3 mr-1 text-gray-500" />
-                            Auto logout after inactivity (minutes)
-                          </label>
-                          <select
-                            id="autoLogout"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={settings.autoLogout}
-                            onChange={(e) =>
-                              handleSettingChange(
-                                "autoLogout",
-                                parseInt(e.target.value)
-                              )
-                            }
-                          >
-                            {[15, 30, 60, 120].map((minutes) => (
-                              <option key={minutes} value={minutes}>
-                                {minutes === 120
-                                  ? "2 hours"
-                                  : `${minutes} minutes`}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ),
-                    },
-                    {
-                      title: "Data Management",
-                      icon: Database,
-                      content: (
-                        <div className="mb-4">
-                          <label
-                            htmlFor="dataRetention"
-                            className="block text-sm font-medium text-gray-700 mb-1 flex items-center"
-                          >
-                            <Database className="h-3 w-3 mr-1 text-gray-500" />
-                            Data retention period (days)
-                          </label>
-                          <select
-                            id="dataRetention"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={settings.dataRetentionDays}
-                            onChange={(e) =>
-                              handleSettingChange(
-                                "dataRetentionDays",
-                                parseInt(e.target.value)
-                              )
-                            }
-                          >
-                            {[30, 60, 90, 180, 365].map((days) => (
-                              <option key={days} value={days}>
-                                {days} days
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ),
-                    },
-                  ].map((section, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-md p-4"
-                    >
-                      <h3 className="font-medium text-gray-900 mb-2 flex items-center">
-                        {React.createElement(section.icon, {
-                          className: "h-4 w-4 mr-2 text-blue-600",
-                        })}
-                        {section.title}
-                      </h3>
-                      {section.content}
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Settings
-                  </button>
-                </div>
-              </div>
+            {/* Device Management Tab */}
+            {activeTab === "deviceManagement" && (
+              <DeviceManagement />
             )}
           </div>
         </div>
       </div>
+      <AccessibilityMenu />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { getMessages } from '@/apis/messagesService';
 import { useSocket } from '@/components/SocketProvider';
 import AccessibilityMenu from '../components/AccessibilityMenu';
+import MedicalRecords from '../components/MedicalRecords';
 import Medications from '../components/Medications';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
@@ -30,6 +31,7 @@ const PatientView = ({userInfo}) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(); // reference for auto-scrolling
+  const [selectedDocumentType, setSelectedDocumentType] = useState(null);
   
   // messages state
   const [messages, setMessages] = useState([]);
@@ -61,6 +63,13 @@ const PatientView = ({userInfo}) => {
       scrollToBottom();
     }
   }, [messages, activeTab]);
+
+  // When tab changes away from records, reset selected document type
+  useEffect(() => {
+    if (activeTab !== "records") {
+      setSelectedDocumentType(null);
+    }
+  }, [activeTab]);
 
   const scrollToBottom = () => {
     // Use setTimeout to ensure the DOM has updated before scrolling
@@ -402,13 +411,13 @@ const PatientView = ({userInfo}) => {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {[
-                    { icon: ClipboardList, label: "Medical History", path: "medical-history" },
-                    { icon: Activity, label: "Exercise Records", path: "exercise-records" },
-                    { icon: FileText, label: "Lab Results", path: "lab-results" }
+                    { icon: ClipboardList, label: "Medical History", onClick: () => { setActiveTab("records"); setSelectedDocumentType("medical_history"); } },
+                    { icon: Activity, label: "Exercise Records", onClick: () => { setActiveTab("records"); setSelectedDocumentType("exercise_record"); } },
+                    { icon: FileText, label: "Lab Results", onClick: () => { setActiveTab("records"); setSelectedDocumentType("lab_result"); } }
                   ].map((item, index) => (
                     <button 
                       key={index}
-                      onClick={() => navigateToPage(item.path)}
+                      onClick={item.onClick}
                       className="h-24 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-2 text-gray-900"
                       aria-label={`Go to ${item.label}`}
                     >
@@ -510,36 +519,19 @@ const PatientView = ({userInfo}) => {
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 flex items-center">
                   <ClipboardList className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0" aria-hidden="true" />
                   <div>
-                    <h3 className="font-medium text-blue-700">Your Records</h3>
+                    <h3 className="font-medium text-blue-700">Your Medical Documents</h3>
                     <p className="text-sm text-blue-600">
-                      All your medical records are securely stored and can be accessed here. You can view your history, test results, and more.
+                      All your medical records are securely stored and can be accessed here. 
+                      Select a category to view, upload, or manage your documents.
                     </p>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { icon: ClipboardList, title: "Medical History", date: "Last updated: Feb 10, 2025", path: "medical-history" },
-                    { icon: Activity, title: "Exercise Records", date: "Last updated: Feb 15, 2025", path: "exercise-records" },
-                    { icon: FileText, title: "Lab Results", date: "Last updated: Jan 25, 2025", path: "lab-results" }
-                  ].map((record, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-center mb-2">
-                        {React.createElement(record.icon, { className: "h-5 w-5 mr-2 text-blue-600", "aria-hidden": "true" })}
-                        <h3 className="font-medium text-gray-900">{record.title}</h3>
-                      </div>
-                      <p className="text-sm text-gray-500">{record.date}</p>
-                      <button 
-                        className="mt-3 text-blue-600 text-sm flex items-center"
-                        aria-label={`View ${record.title} details`}
-                        onClick={() => navigateToPage(record.path)}
-                      >
-                        <FileText className="h-3 w-3 mr-1" aria-hidden="true" />
-                        View details
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                {/* MedicalRecords component */}
+                <MedicalRecords 
+                  patientId={userInfo.id} 
+                  initialSelectedType={selectedDocumentType} 
+                />
               </div>
             )}
 

@@ -15,6 +15,10 @@ import controllers.messaging
 import controllers.connection
 from auth import requires_auth, AuthError
 from talisman import Talisman
+from models.patient_document import PatientDocument
+from datetime import datetime, timedelta, timezone
+from azure.storage.blob import generate_container_sas, ContainerSasPermissions
+
 
 load_dotenv()
 db_url = os.environ.get('DATABASE_URL')
@@ -44,6 +48,9 @@ app.register_blueprint(chat_messages)
 from controllers.device import devices
 app.register_blueprint(devices)
 
+from controllers.patient_document import patient_documents
+app.register_blueprint(patient_documents)
+
 from controllers.motion_file import motion_files
 app.register_blueprint(motion_files)
 
@@ -65,6 +72,18 @@ def handle_auth_error(ex):
 def private():
   response = "Hello from a private endpoint! You need to be authenticated to see this."
   return jsonify(message=response)
+
+@app.route('/sas_token',methods=['GET'])
+@requires_auth
+def get_sas_token():
+  sas_token = generate_container_sas(
+    account_name='capstorage2025',
+    container_name='patient-records',
+    account_key=os.environ.get('AZURE_ACCESS_KEY'),
+    permission=ContainerSasPermissions(read=True, write=True, delete=True),
+    expiry=datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
+  )
+  return jsonify({'token': sas_token})
 
 
 if __name__ == '__main__':

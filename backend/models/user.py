@@ -42,6 +42,8 @@ class User(Base):
 
   patient_documents: Mapped[List['PatientDocument']] = relationship(back_populates='patient')
 
+  medications = relationship("Medication", back_populates="patient", cascade="all, delete-orphan")
+
 
 
   def __repr__(self) -> str:

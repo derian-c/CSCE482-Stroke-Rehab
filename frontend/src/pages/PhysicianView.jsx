@@ -22,6 +22,7 @@ import { getMessages } from '@/apis/messagesService'
 import { getMotionFiles } from "../apis/motionFileService";
 import MotionReadingsTab from '@/components/MotionReadingsTab'
 import MotionFilesTab from '@/components/MotionFilesTab'
+import AccessibilityMenu from '@/components/AccessibilityMenu';
 
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -465,7 +466,7 @@ const PhysicianView = ({userInfo}) => {
                 {user?.name?.charAt(0) || "Dr"}
               </div>
             )}
-            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {user?.name || "Physician"}</span>
+            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {userInfo.first_name + " " + userInfo.last_name || "Physician"}</span>
             <button
               onClick={() => logout({ returnTo: window.location.origin })}
               className="text-gray-500 hover:text-red-600 transition-colors"
@@ -749,6 +750,8 @@ const PhysicianView = ({userInfo}) => {
           )}
         </div>
       </div>
+      
+      <AccessibilityMenu />
     </div >
   );
 };

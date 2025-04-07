@@ -10,6 +10,7 @@ from models.device import Device
 from models.user import User
 from models.patient_physician import PatientPhysician
 from models.motion_file import Motion_File
+from models.medication import Medication
 import controllers.messaging
 import controllers.connection
 from auth import requires_auth, AuthError
@@ -52,6 +53,9 @@ app.register_blueprint(patient_documents)
 
 from controllers.motion_file import motion_files
 app.register_blueprint(motion_files)
+
+from controllers.medication import medications
+app.register_blueprint(medications)
 
 socket.init_app(app=app, cors_allowed_origins=frontend_url)
 

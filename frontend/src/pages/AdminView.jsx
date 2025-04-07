@@ -7,6 +7,7 @@ import { getPhysicians, createPhysician, deletePhysicianByID } from '@/apis/phys
 import { getAdmins } from '@/apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
 import { DeviceManagement } from "../components/DeviceManagement";
+import AccessibilityMenu from '@/components/AccessibilityMenu';
 
 import {
   UserPlus,
@@ -899,6 +900,7 @@ function AdminView({userInfo}) {
           </div>
         </div>
       </div>
+      <AccessibilityMenu />
     </div>
   );
 }

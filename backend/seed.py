@@ -7,6 +7,7 @@ from models.patient_physician import PatientPhysician
 from models.chat import Chat
 from models.chat_message import ChatMessage
 from models.device import Device
+from models.patient_document import PatientDocument
 from models.motion_file import Motion_File
 load_dotenv()
 

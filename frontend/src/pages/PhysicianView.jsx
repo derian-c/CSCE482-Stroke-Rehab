@@ -27,6 +27,7 @@ import AccessibilityMenu from '@/components/AccessibilityMenu';
 import AddPatient from '@/components/AddPatient';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import { getSasToken } from '@/apis/sasTokenService'
 
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -62,6 +63,8 @@ const PhysicianView = ({userInfo}) => {
     type: "warning",
     onConfirm: () => {}
   });
+
+  const  [sasToken, setSasToken] = useState(null)
 
   const socket = useSocket()
 
@@ -344,6 +347,9 @@ const PhysicianView = ({userInfo}) => {
           const files = await response.json();
           setPatientMotionFiles(files);
           // Optionally select the first file by default
+          const sas_token = (await (await getSasToken('motion-files',token)).json()).token
+          setSasToken(sas_token)
+          console.log(sas_token)
           if (files.length > 0) {
             setSelectedMotionFile(files[0]);
           } else {
@@ -364,6 +370,9 @@ const PhysicianView = ({userInfo}) => {
     fetchPatientMotionFiles();
   }, [selectedPatient]);
 
+  async function handleSetSelectedFile(e){
+
+  }
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
       {/* Notification Toast */}
@@ -563,10 +572,13 @@ const PhysicianView = ({userInfo}) => {
                         <select
                           className="border border-gray-300 rounded-md text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           value={selectedMotionFile?.id || ""}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const fileId = e.target.value;
                             const file = patientMotionFiles.find(f => f.id.toString() === fileId);
-                            setSelectedMotionFile(file || null);
+                            const token = await getAccessTokenSilently()
+                            const sas_token = (await (await getSasToken('motion-files',token)).json()).token
+                            setSasToken(sas_token)
+                            setSelectedMotionFile(file);
                           }}
                         >
                           <option value="">Select motion file</option>
@@ -579,7 +591,7 @@ const PhysicianView = ({userInfo}) => {
                       </div>
 
                       <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-                        <PatientModel />
+                        {selectedMotionFile && sasToken ?<PatientModel file={selectedMotionFile} token={sasToken}/>:null}
                       </div>
                     </div>
 

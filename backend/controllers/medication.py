@@ -4,6 +4,7 @@ from models.medication import Medication
 from models.user import User
 from datetime import datetime
 from auth import requires_auth
+from sqlalchemy.sql import func
 
 medications = Blueprint('medications', __name__, url_prefix='/medications')
 
@@ -86,7 +87,7 @@ def log_medication(id):
         return jsonify({'error': 'Medication does not exist'}), 422
     
     # Update last_taken timestamp to current time
-    medication.last_taken = datetime.utcnow()
+    medication.last_taken = func.now()
     db.session.commit()
     
     return jsonify(medication.dict())

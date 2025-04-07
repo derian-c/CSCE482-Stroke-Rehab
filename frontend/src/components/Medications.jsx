@@ -14,7 +14,7 @@ import {
 } from "@/apis/medicationService";
 import { useAuth0 } from "@auth0/auth0-react";
 
-const Medications = ({ patientId }) => {
+const Medications = ({ patientId, showNotification, showConfirmation }) => {
   const { getAccessTokenSilently } = useAuth0();
   const [medications, setMedications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +48,11 @@ const Medications = ({ patientId }) => {
     } catch (error) {
       console.error("Error fetching medications:", error);
       setError(error.message);
+      
+      // Show notification if available
+      if (showNotification) {
+        showNotification(`Error loading medications: ${error.message}`, "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -77,6 +82,11 @@ const Medications = ({ patientId }) => {
         const newMed = await response.json();
         setMedications([...medications, newMed]);
         setNewMedication({ name: "", dosage: "", instructions: "" });
+        
+        // Show success notification
+        if (showNotification) {
+          showNotification(`Medication ${newMed.name} added successfully!`, "success");
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to add medication");
@@ -84,10 +94,15 @@ const Medications = ({ patientId }) => {
     } catch (error) {
       console.error("Error adding medication:", error);
       setError(error.message);
+      
+      // Show error notification
+      if (showNotification) {
+        showNotification(`Error adding medication: ${error.message}`, "error");
+      }
     }
   };
 
-  const handleLogMedication = async (id) => {
+  const handleLogMedication = async (id, medicationName) => {
     try {
       const token = await getAccessTokenSilently();
       const response = await logMedicationIntake(id, token);
@@ -97,6 +112,11 @@ const Medications = ({ patientId }) => {
         setMedications(medications.map(med => 
           med.id === id ? updatedMed : med
         ));
+        
+        // Show success notification
+        if (showNotification) {
+          showNotification(`${medicationName} intake logged successfully!`, "success");
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to log medication intake");
@@ -104,16 +124,46 @@ const Medications = ({ patientId }) => {
     } catch (error) {
       console.error("Error logging medication intake:", error);
       setError(error.message);
+      
+      // Show error notification
+      if (showNotification) {
+        showNotification(`Error logging intake: ${error.message}`, "error");
+      }
     }
   };
 
-  const handleDeleteMedication = async (id) => {
+  // Handle confirmation and deletion of medication
+  const confirmDeleteMedication = (id, name) => {
+    if (showConfirmation) {
+      showConfirmation(
+        "Delete Medication",
+        `Are you sure you want to delete ${name}? This action cannot be undone.`,
+        () => performDeleteMedication(id, name),
+        "Delete",
+        "Cancel",
+        "danger"
+      );
+    } else {
+      // Fallback to regular confirm if showConfirmation is not available
+      if (window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
+        performDeleteMedication(id, name);
+      }
+    }
+  };
+  
+  // Actual delete operation after confirmation
+  const performDeleteMedication = async (id, name) => {
     try {
       const token = await getAccessTokenSilently();
       const response = await deleteMedication(id, token);
       
       if (response.ok) {
         setMedications(medications.filter(med => med.id !== id));
+        
+        // Show success notification
+        if (showNotification) {
+          showNotification(`Medication ${name} deleted successfully`, "success");
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to delete medication");
@@ -121,6 +171,11 @@ const Medications = ({ patientId }) => {
     } catch (error) {
       console.error("Error deleting medication:", error);
       setError(error.message);
+      
+      // Show error notification
+      if (showNotification) {
+        showNotification(`Error deleting medication: ${error.message}`, "error");
+      }
     }
   };
 
@@ -257,7 +312,7 @@ const Medications = ({ patientId }) => {
                 
                 <div className="mt-3 md:mt-0 flex items-center space-x-2">
                   <button 
-                    onClick={() => handleLogMedication(medication.id)}
+                    onClick={() => handleLogMedication(medication.id, medication.name)}
                     className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition-colors flex items-center"
                     aria-label={`Log intake for ${medication.name}`}
                   >
@@ -266,7 +321,7 @@ const Medications = ({ patientId }) => {
                   </button>
                   
                   <button 
-                    onClick={() => handleDeleteMedication(medication.id)}
+                    onClick={() => confirmDeleteMedication(medication.id, medication.name)}
                     className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors flex items-center"
                     aria-label={`Delete ${medication.name}`}
                   >

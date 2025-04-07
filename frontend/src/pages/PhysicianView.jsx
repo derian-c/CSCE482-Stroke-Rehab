@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getPatients } from "@/apis/patientService";
+import { getPatients, createPatientByPhysician } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -15,7 +15,8 @@ import {
   PanelRight,
   ChevronRight,
   BarChart,
-  MessageCircle
+  MessageCircle,
+  UserPlus
 } from "lucide-react";
 import { useSocket } from '@/components/SocketProvider'
 import { getMessages } from '@/apis/messagesService'
@@ -23,155 +24,13 @@ import { getMotionFiles } from "../apis/motionFileService";
 import MotionReadingsTab from '@/components/MotionReadingsTab'
 import MotionFilesTab from '@/components/MotionFilesTab'
 import AccessibilityMenu from '@/components/AccessibilityMenu';
+import AddPatient from '@/components/AddPatient';
+import NotificationToast from "../components/NotificationToast";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
-  const [patients, setPatients] = useState([
-    {
-      id: 0,
-      name: "",
-      age: 76,
-      lastSession: "2025-02-15",
-      exerciseQuality: {
-        shoulder: "Good range of motion, slight tension",
-        elbow: "Limited extension",
-        wrist: "Improved flexibility",
-        knee: "Normal range of motion",
-      },
-      messages: [],
-      jointReadings: {
-        shoulder: {
-          min: 10,
-          max: 160,
-          normal: { min: 0, max: 180 },
-          lastUpdated: "2025-02-15T14:30:00",
-          notes: "Showing improvement, continue current regimen"
-        },
-        elbow: {
-          min: 15,
-          max: 145,
-          normal: { min: 0, max: 150 },
-          lastUpdated: "2025-02-15T14:35:00",
-          notes: "Limited extension, focus on stretching exercises"
-        },
-        wrist: {
-          min: 5,
-          max: 70,
-          normal: { min: 0, max: 80 },
-          lastUpdated: "2025-02-14T10:15:00",
-          notes: "Flexibility improving with therapy"
-        },
-        knee: {
-          min: 0,
-          max: 130,
-          normal: { min: 0, max: 135 },
-          lastUpdated: "2025-02-15T14:40:00",
-          notes: "Normal range of motion achieved"
-        }
-      },
-      motionFiles: [
-        {
-          id: "m001",
-          jointType: "shoulder",
-          uploadDate: "2025-02-15T14:30:00",
-          filename: "shoulder_motion_20250215.csv"
-        },
-        {
-          id: "m002",
-          jointType: "elbow",
-          uploadDate: "2025-02-15T14:35:00",
-          filename: "elbow_motion_20250215.csv"
-        },
-        {
-          id: "m003",
-          jointType: "wrist",
-          uploadDate: "2025-02-14T10:15:00",
-          filename: "wrist_motion_20250214.csv"
-        },
-        {
-          id: "m004",
-          jointType: "knee",
-          uploadDate: "2025-02-15T14:40:00",
-          filename: "knee_motion_20250215.csv"
-        },
-        {
-          id: "m005",
-          jointType: "shoulder",
-          uploadDate: "2025-02-10T11:20:00",
-          filename: "shoulder_motion_20250210.csv"
-        }
-      ]
-    },
-    {
-      id: 1,
-      name: "",
-      age: 81,
-      lastSession: "2025-02-14",
-      exerciseQuality: {
-        shoulder: "Restricted movement",
-        elbow: "Good progress",
-        wrist: "Needs attention",
-        knee: "Strong improvement",
-      },
-      messages: [],
-      jointReadings: {
-        shoulder: {
-          min: 30,
-          max: 110,
-          normal: { min: 0, max: 180 },
-          lastUpdated: "2025-02-14T13:20:00",
-          notes: "Restricted movement, continue gentle stretches"
-        },
-        elbow: {
-          min: 10,
-          max: 135,
-          normal: { min: 0, max: 150 },
-          lastUpdated: "2025-02-14T13:25:00",
-          notes: "Good progress with assisted exercises"
-        },
-        wrist: {
-          min: 15,
-          max: 40,
-          normal: { min: 0, max: 80 },
-          lastUpdated: "2025-02-14T13:30:00",
-          notes: "Limited range, needs focused attention"
-        },
-        knee: {
-          min: 5,
-          max: 125,
-          normal: { min: 0, max: 135 },
-          lastUpdated: "2025-02-14T13:35:00",
-          notes: "Strong improvement after therapy"
-        }
-      },
-      motionFiles: [
-        {
-          id: "m006",
-          jointType: "shoulder",
-          uploadDate: "2025-02-14T13:20:00",
-          filename: "shoulder_motion_20250214.csv"
-        },
-        {
-          id: "m007",
-          jointType: "elbow",
-          uploadDate: "2025-02-14T13:25:00",
-          filename: "elbow_motion_20250214.csv"
-        },
-        {
-          id: "m008",
-          jointType: "wrist",
-          uploadDate: "2025-02-14T13:30:00",
-          filename: "wrist_motion_20250214.csv"
-        },
-        {
-          id: "m009",
-          jointType: "knee",
-          uploadDate: "2025-02-14T13:35:00",
-          filename: "knee_motion_20250214.csv"
-        }
-      ]
-    },
-  ]);
+  const [patients, setPatients] = useState([]);
 
   // State to track which messages have been read - stored in localStorage
   const [readMessageIds, setReadMessageIds] = useState(() => {
@@ -189,9 +48,20 @@ const PhysicianView = ({userInfo}) => {
   const [jointTab, setJointTab] = useState("readings");
   const selectedPatientRef = useRef();
   const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
+  const [showAddPatient, setShowAddPatient] = useState(false);
 
   const [patientMotionFiles, setPatientMotionFiles] = useState([]);
   const [selectedMotionFile, setSelectedMotionFile] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    type: "warning",
+    onConfirm: () => {}
+  });
 
   const socket = useSocket()
 
@@ -223,6 +93,22 @@ const PhysicianView = ({userInfo}) => {
         }
       }
     }, 100);
+  };
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+  };
+
+  const showConfirmation = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel", type = "warning") => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      type,
+      onConfirm
+    });
   };
 
   const handlePatientClick = (patient) => {
@@ -310,6 +196,38 @@ const PhysicianView = ({userInfo}) => {
     setMessage('')
   };
 
+  // Handle adding a new patient
+  const handleAddPatient = async (patientData) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await createPatientByPhysician(userInfo.id, patientData, token);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add patient");
+      }
+      
+      const newPatient = await response.json();
+      
+      const simplePatient = {
+        id: newPatient.id,
+        name: `${patientData.first_name} ${patientData.last_name}`,
+        messages: []
+      };
+      
+      console.log("Adding new patient:", simplePatient);
+      
+      // Add to patients list
+      setPatients(prevPatients => [...prevPatients, simplePatient]);
+      
+      showNotification(`Patient ${patientData.first_name} ${patientData.last_name} added successfully`, "success");
+      return newPatient;
+    } catch (error) {
+      console.error("Error adding patient:", error);
+      throw error;
+    }
+  };
+
   // Handle Enter key press to send message
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -376,21 +294,20 @@ const PhysicianView = ({userInfo}) => {
   useEffect(() => {
     async function loadPatients() {
       const token = await getAccessTokenSilently()
-      const _patients = userInfo.patients
-      let patientsCopy = [...patients];
-
-      for (let i = 0; i < Math.min(2, _patients.length); i++) {
-        patientsCopy[i].id = _patients[i].id;
-        patientsCopy[i].name = _patients[i].first_name + ' ' + _patients[i].last_name;
+      // const _patients = userInfo.patients
+      // let patientsCopy = [...patients];
+      console.log(userInfo.patients)
+      for (let i = 0; i < userInfo.patients.length; i++) {
+        
 
         // fetch patient messages
         try {
-          const response = await getMessages({ 'physician_id': userInfo.id, 'patient_id': patientsCopy[i].id }, token);
+          const response = await getMessages({ 'physician_id': userInfo.id, 'patient_id': userInfo.patients[i].id }, token);
           const data = await response.json()
-          patientsCopy[i].messages = data;
+          userInfo.patients[i].messages = data;
 
           // If this patient is already selected and messages tab is active, mark messages as read
-          if (selectedPatient && selectedPatient.id === patientsCopy[i].id && activeTab === "messages") {
+          if (selectedPatient && selectedPatient.id === userInfo.patients[i].id && activeTab === "messages") {
             const messageIds = data.map(msg => msg.id);
             setReadMessageIds(prevReadIds => {
               const combinedIds = [...new Set([...prevReadIds, ...messageIds])];
@@ -399,12 +316,12 @@ const PhysicianView = ({userInfo}) => {
             });
           }
         } catch (error) {
-          console.error(`Error fetching messages for patient ${patientsCopy[i].id}:`, error);
-          patientsCopy[i].messages = [];
+          console.error(`Error fetching messages for patient ${userInfo.patients[i].id}:`, error);
+          userInfo.patients[i].messages = [];
         }
       }
 
-      setPatients(patientsCopy);
+      setPatients(userInfo.patients);
       // } else {
       //   console.error("Failed to fetch patients");
       // }
@@ -447,6 +364,36 @@ const PhysicianView = ({userInfo}) => {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
+      {/* Notification Toast */}
+      {notification && (
+        <NotificationToast
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        type={confirmDialog.type}
+      />
+      {/* Add Patient Popup */}
+      <AddPatient 
+        isOpen={showAddPatient}
+        onClose={() => setShowAddPatient(false)}
+        onAddPatient={handleAddPatient}
+        showNotification={showNotification}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
@@ -511,10 +458,9 @@ const PhysicianView = ({userInfo}) => {
                     <>
                       <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
                       <div className="overflow-hidden">
-                        <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.name}</div>
+                        <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.first_name + " " + patient.last_name}</div>
                         <div className="text-xs text-gray-500 flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {patient.lastSession}
+                          
                         </div>
                       </div>
                       {unreadCount > 0 && (
@@ -526,6 +472,30 @@ const PhysicianView = ({userInfo}) => {
                 </button>
               );
             })}
+            
+            {/* Add Patient Button - Expanded Sidebar */}
+            <div className={`p-3 border-t mt-auto ${sidebarCollapsed ? 'hidden md:hidden' : 'block'}`}>
+              <button
+                onClick={() => setShowAddPatient(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-md py-2 px-4 flex items-center justify-center transition-colors"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add New Patient
+              </button>
+            </div>
+                    
+            {/* Add Patient Button - Collapsed Sidebar */}
+            <div className={`p-3 border-t mt-auto ${sidebarCollapsed ? 'block md:block' : 'hidden'}`}>
+              <button
+                onClick={() => setShowAddPatient(true)}
+                className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-md p-2"
+                title="Add New Patient"
+              >
+                <UserPlus className="h-5 w-5" />
+              </button>
+            </div>
+
+
           </div>
         </div>
 
@@ -537,14 +507,13 @@ const PhysicianView = ({userInfo}) => {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                   <User className="h-6 w-6 mr-2 text-blue-600" />
-                  {selectedPatient.name}
+                  {selectedPatient.first_name + " " + selectedPatient.last_name}
                   <span className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
                     Age: {selectedPatient.age}
                   </span>
                 </h2>
                 <p className="text-gray-600 flex items-center mt-2">
-                  <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                  Last session: {selectedPatient.lastSession}
+                  
                 </p>
                 <div className="mt-4 border-t pt-4">
                   <div className="flex space-x-2">

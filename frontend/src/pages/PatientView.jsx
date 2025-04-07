@@ -20,6 +20,8 @@ import { getMessages } from '@/apis/messagesService';
 import { useSocket } from '@/components/SocketProvider';
 import AccessibilityMenu from '../components/AccessibilityMenu';
 import Medications from '../components/Medications';
+import NotificationToast from "../components/NotificationToast";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 const PatientView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -31,6 +33,18 @@ const PatientView = ({userInfo}) => {
   
   // messages state
   const [messages, setMessages] = useState([]);
+  
+  // Notification and confirmation dialog states
+  const [notification, setNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    type: "warning",
+    onConfirm: () => {}
+  });
   
   // sample
   const exerciseProgress = 75;
@@ -110,6 +124,10 @@ const PatientView = ({userInfo}) => {
         
       } catch (error) {
         console.error("Error fetching messages:", error);
+        setNotification({
+          type: 'error',
+          message: `Failed to load messages: ${error.message}`
+        });
       }
     };
     
@@ -124,6 +142,14 @@ const PatientView = ({userInfo}) => {
       if (data.sender != 0) {
         // We don't add it to readMessageIds here, so it will be counted as unread
         // and will trigger the notification dot
+        
+        // Show notification for new message if not in messages tab
+        if (activeTab !== "messages") {
+          setNotification({
+            type: 'info',
+            message: 'You have a new message from your physician'
+          });
+        }
       }
     }
     socket.on('message', onMessageEvent)
@@ -132,7 +158,7 @@ const PatientView = ({userInfo}) => {
     return () => {
       socket.off('message', onMessageEvent)
     }
-  }, []);
+  }, [activeTab]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -146,11 +172,14 @@ const PatientView = ({userInfo}) => {
         'sender': userInfo.id
       }
       socket.emit('message', newMessageObj)
-      setNewMessage(""); 
+      setNewMessage("");
       
     } catch (error) {
       console.error("Error sending message:", error);
-      
+      setNotification({
+        type: 'error',
+        message: `Failed to send message: ${error.message}`
+      });
     }
   };
 
@@ -191,6 +220,24 @@ const PatientView = ({userInfo}) => {
 
   const currentPatientId = userInfo.id;
 
+  // Function to show a confirmation dialog - can be passed down to child components
+  const showConfirmation = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel", type = "warning") => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      type,
+      onConfirm
+    });
+  };
+
+  // Function to show a notification - can be passed down to child components
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+  };
+
   const TabButton = ({ tab, icon, label, notification = false }) => (
     <button
       onClick={() => handleTabChange(tab)}
@@ -210,6 +257,30 @@ const PatientView = ({userInfo}) => {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-auto">
+      {/* Notification Toast */}
+      {notification && (
+        <NotificationToast
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        type={confirmDialog.type}
+      />
+      
       {/* Skip to content link for keyboard users */}
       <a href="#main-content" className="skip-to-content">
         Skip to content
@@ -475,7 +546,11 @@ const PatientView = ({userInfo}) => {
             {/* Medications Tab */}
             {activeTab === "medications" && (
               <div id="medications-panel" role="tabpanel" aria-labelledby="medications-tab">
-                <Medications patientId={currentPatientId} />
+                <Medications 
+                  patientId={currentPatientId} 
+                  showNotification={showNotification}
+                  showConfirmation={showConfirmation}
+                />
               </div>
             )}
           </div>

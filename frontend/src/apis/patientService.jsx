@@ -54,3 +54,22 @@ export async function deletePatientByID(id, token){
     }
   })
 }
+
+export async function createPatientByPhysician(physicianId, patientData, token){
+  
+  const data = {
+    ...patientData,
+    physician_id: physicianId
+  };
+  
+  
+  return fetch(`${BACKEND_URL}/patients`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify(data)
+  });
+}

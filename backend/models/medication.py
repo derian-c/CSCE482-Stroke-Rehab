@@ -13,7 +13,7 @@ class Medication(Base):
     name: Mapped[str] = mapped_column(String(100))
     dosage: Mapped[str] = mapped_column(String(50))
     instructions: Mapped[str] = mapped_column(String(200))
-    last_taken: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_taken: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     
     patient = relationship("User", back_populates="medications")

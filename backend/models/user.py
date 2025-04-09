@@ -54,8 +54,12 @@ class User(Base):
     # To prevent recursively calling the dict function forever
     if self.physician:
       physician_dict = {c.name: getattr(self.physician, c.name) for c in self.physician.__table__.columns}
-      user_dict['physician'] = physician_dict
+    else:
+      physician_dict = {}
+    user_dict['physician'] = physician_dict
     if self.patients:
       patient_dicts = [{c.name: getattr(patient, c.name) for c in patient.__table__.columns} for patient in self.patients]
-      user_dict['patients'] = patient_dicts
+    else:
+      patient_dicts = []
+    user_dict['patients'] = patient_dicts
     return user_dict

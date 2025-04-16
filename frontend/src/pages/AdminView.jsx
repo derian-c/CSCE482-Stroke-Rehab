@@ -14,15 +14,8 @@ import ConfirmationDialog from "../components/ConfirmationDialog";
 import {
   UserPlus,
   Users,
-  ClipboardList,
   LogOut,
   Trash2,
-  Bell,
-  Shield,
-  Database,
-  Eye,
-  Edit,
-  Lock,
   Activity,
   MonitorSmartphone,
 } from "lucide-react";
@@ -41,7 +34,6 @@ function AdminView({userInfo}) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [physicians, setPhysicians] = useState([]);
   const [admins, setAdmins] = useState([]);
-  const [activityLog, setActivityLog] = useState([]);
   const [isLoadingPhysicians, setIsLoadingPhysicians] = useState(true);
   const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   const [error, setError] = useState(null);
@@ -55,15 +47,6 @@ function AdminView({userInfo}) {
 
   // Handle logout functionality
   const handleLogout = () => {
-    // Add to activity log
-    const newActivityLog = {
-      id: activityLog.length + 1,
-      user: user?.name || "Admin",
-      action: "Logged out",
-      timestamp: new Date().toISOString(),
-    };
-    setActivityLog([newActivityLog, ...activityLog]);
-    
     const returnUrl = window.location.origin;
     
     // Log out using Auth0 and redirect to the appropriate home page
@@ -101,7 +84,6 @@ function AdminView({userInfo}) {
           first_name: physician.first_name,
           last_name: physician.last_name,
           role: "Physician",
-          permissions: physician.permissions || ["view_patients"],
         }));
 
         setPhysicians(formattedPhysicians);
@@ -137,24 +119,6 @@ function AdminView({userInfo}) {
     fetchAdmins()
   }, [getAccessTokenSilently]);
 
-  // mock activity log
-  useEffect(() => {
-    setActivityLog([
-      {
-        id: 1,
-        user: "System",
-        action: "Loaded physician directory",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        user: user?.name || "Current User",
-        action: "Admin login",
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-  }, [user]);
-
   // handle physician invitation submission
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
@@ -185,7 +149,6 @@ function AdminView({userInfo}) {
             first_name: newPhysician.first_name,
             last_name: newPhysician.last_name,
             role: "Physician",
-            permissions: ["view_patients"],
           },
         ]);
 
@@ -194,15 +157,6 @@ function AdminView({userInfo}) {
         setInviteLastName("");
         setInviteEmail("");
 
-        // log activity
-        const newActivityLog = {
-          id: activityLog.length + 1,
-          user: user?.name || "Admin",
-          action: `Added physician ${newPhysician.first_name} ${newPhysician.last_name}`,
-          timestamp: new Date().toISOString(),
-        };
-
-        setActivityLog([newActivityLog, ...activityLog]);
         setNotification({
           type: 'success',
           message: `Physician ${inviteFirstName} ${inviteLastName} added successfully`
@@ -236,14 +190,6 @@ function AdminView({userInfo}) {
       );
       setPhysicians(physicians.filter((physician) => physician.id !== id));
 
-      const newActivityLog = {
-        id: activityLog.length + 1,
-        user: user?.name || "Admin",
-        action: `Deleted physician ${deletedPhysician.name}`,
-        timestamp: new Date().toISOString(),
-      };
-
-      setActivityLog([newActivityLog, ...activityLog]);
       setNotification({
         type: 'success',
         message: `Physician ${deletedPhysician.name} deleted successfully`
@@ -264,31 +210,6 @@ function AdminView({userInfo}) {
       physicianId: id,
       physicianName: name
     });
-  };
-
-  // permissions for physician
-  const handlePermissionToggle = async (physicianId, permission) => {
-    const physician = physicians.find((p) => p.id === physicianId);
-    const hasPermission = physician.permissions.includes(permission);
-    const updatedPermissions = hasPermission
-      ? physician.permissions.filter((p) => p !== permission)
-      : [...physician.permissions, permission];
-
-    setPhysicians(
-      physicians.map((p) =>
-        p.id === physicianId ? { ...p, permissions: updatedPermissions } : p
-      )
-    );
-
-    const newActivityLog = {
-      id: activityLog.length + 1,
-      user: user?.name || "Admin",
-      action: `${hasPermission ? "Removed" : "Added"
-        } ${permission} permission for ${physician.name}`,
-      timestamp: new Date().toISOString(),
-    };
-
-    setActivityLog([newActivityLog, ...activityLog]);
   };
 
   // loading state
@@ -318,8 +239,8 @@ function AdminView({userInfo}) {
     <button
       onClick={() => setActiveTab(tab)}
       className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${activeTab === tab
-        ? "text-blue-600 border-b-2 border-blue-600"
-        : "text-gray-500 hover:text-gray-700"
+        ? "bg-blue-600 text-white border-b-2 border-blue-400"
+        : "bg-gray-700 text-white hover:bg-gray-600"
         }`}
     >
       {React.createElement(icon, { className: "h-4 w-4 mr-1" })}
@@ -393,11 +314,6 @@ function AdminView({userInfo}) {
                 tab="staff"
                 icon={Users}
                 label="Physician Management"
-              />
-              <TabButton
-                tab="activity"
-                icon={ClipboardList}
-                label="Activity Log"
               />
               <TabButton
                 tab="deviceManagement"
@@ -494,7 +410,7 @@ function AdminView({userInfo}) {
                   Physician Management
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Manage physicians and their permissions.
+                  Manage physicians in the system.
                 </p>
 
                 {physicians.length === 0 ? (
@@ -520,9 +436,6 @@ function AdminView({userInfo}) {
                             Role
                           </th>
                           <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Permissions
-                          </th>
-                          <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
@@ -545,52 +458,6 @@ function AdminView({userInfo}) {
                                 {physician.role}
                               </span>
                             </td>
-                            <td className="px-3 py-4 sm:px-6 whitespace-normal text-sm text-gray-500">
-                              <div className="flex flex-wrap gap-2">
-                                {[
-                                  {
-                                    key: "view_patients",
-                                    icon: Eye,
-                                    label: "view patients",
-                                  },
-                                  {
-                                    key: "edit_records",
-                                    icon: Edit,
-                                    label: "edit records",
-                                  },
-                                  {
-                                    key: "admin_access",
-                                    icon: Lock,
-                                    label: "admin access",
-                                  },
-                                ].map(({ key, icon, label }) => (
-                                  <label
-                                    key={key}
-                                    className="inline-flex items-center"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="form-checkbox h-4 w-4 text-blue-600"
-                                      checked={physician.permissions.includes(
-                                        key
-                                      )}
-                                      onChange={() =>
-                                        handlePermissionToggle(
-                                          physician.id,
-                                          key
-                                        )
-                                      }
-                                    />
-                                    <span className="ml-2 text-xs sm:text-sm flex items-center">
-                                      {React.createElement(icon, {
-                                        className: "h-3 w-3 mr-1 text-gray-500",
-                                      })}
-                                      {label}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            </td>
                             <td className="px-3 py-4 sm:px-6 whitespace-nowrap text-sm">
                               <button
                                 onClick={() =>
@@ -608,97 +475,6 @@ function AdminView({userInfo}) {
                     </table>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Activity Log Tab */}
-            {activeTab === "activity" && (
-              <div className="w-full">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
-                  Activity Log
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  View system activity and action history.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 w-full">
-                  {[
-                    {
-                      bg: "bg-blue-50",
-                      icon: Users,
-                      color: "text-blue-600",
-                      count: physicians.length,
-                      label: "Active Physicians",
-                    },
-                    {
-                      bg: "bg-green-50",
-                      icon: Shield,
-                      color: "text-green-600",
-                      count: admins.length,
-                      label: "Active Admins",
-                    },
-                    {
-                      bg: "bg-purple-50",
-                      icon: Activity,
-                      color: "text-purple-600",
-                      count: activityLog.length,
-                      label: "Recent Actions",
-                    },
-                  ].map((item, index) => (
-                    <div
-                      key={index}
-                      className={`${item.bg} p-4 rounded-lg flex items-center`}
-                    >
-                      {React.createElement(item.icon, {
-                        className: `h-8 w-8 ${item.color} mr-3`,
-                      })}
-                      <div>
-                        <div className={`${item.color} text-xl font-bold`}>
-                          {item.count}
-                        </div>
-                        <div className="text-gray-500 text-sm">
-                          {item.label}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="overflow-x-auto w-full">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          User
-                        </th>
-                        <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Action
-                        </th>
-                        <th className="px-3 py-3 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Timestamp
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {activityLog.map((log) => (
-                        <tr key={log.id}>
-                          <td className="px-3 py-4 sm:px-6 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">
-                              {log.user}
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 sm:px-6 whitespace-nowrap">
-                            <div className="text-gray-500">{log.action}</div>
-                          </td>
-                          <td className="px-3 py-4 sm:px-6 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(log.timestamp).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             )}
 

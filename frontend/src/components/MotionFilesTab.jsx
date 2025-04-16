@@ -134,10 +134,10 @@ const MotionFilesTab = ({ selectedPatient, formatDate, handleViewFile }) => {
               <div className="flex-1 pr-3">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2 text-gray-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{formatDate(file.uploadDate)}</span>
+                  <span className="text-sm text-gray-700">{formatDate(file.createdAt)}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1 truncate">
-                  {file.filename}
+                  {file.name}
                 </div>
               </div>
               <div className="flex-shrink-0 w-16 text-right">

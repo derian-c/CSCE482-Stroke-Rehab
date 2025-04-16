@@ -93,7 +93,7 @@ const AddPatient = ({ isOpen, onClose, onAddPatient, showNotification }) => {
             <input
               type="text"
               id="firstName"
-              placeholder="John"
+              placeholder="e.g. John"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -111,7 +111,7 @@ const AddPatient = ({ isOpen, onClose, onAddPatient, showNotification }) => {
             <input
               type="text"
               id="lastName"
-              placeholder="Doe"
+              placeholder="e.g. Doe"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -129,7 +129,7 @@ const AddPatient = ({ isOpen, onClose, onAddPatient, showNotification }) => {
             <input
               type="email"
               id="email"
-              placeholder="patient@example.com"
+              placeholder="e.g. patient@example.com"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

@@ -263,7 +263,8 @@ const PhysicianView = ({userInfo}) => {
           }
           
           // Remove the patient from the list
-          setPatients(prevPatients => prevPatients.filter(p => p.id !== patientId));
+          userInfo.patients = userInfo.patients.filter(p => p.id !== patientId)
+          setPatients(userInfo.patients);
           
           // Show success notification
           showNotification(`Patient ${patientName} deleted successfully`, "success");
@@ -347,7 +348,6 @@ const PhysicianView = ({userInfo}) => {
   useEffect(() => {
     async function loadPatients() {
       const token = await getAccessTokenSilently()
-      console.log(userInfo.patients)
       for (let i = 0; i < userInfo.patients.length; i++) {
         
         // fetch patient messages

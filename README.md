@@ -36,6 +36,11 @@ venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 ```
+4. **Install Docker Image:**
+
+```bash
+docker pull enigmap2/strokerehab
+```
 
 ### Frontend
 1. **Open a new terminal (or a new tab) and navigate to the frontend directory:**
@@ -49,7 +54,6 @@ cd ../frontend
 ```bash
 npm install
 ```
-
 ---
 
 ## Running the App

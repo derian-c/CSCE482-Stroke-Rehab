@@ -4,6 +4,7 @@ from models.user import User
 from models.patient_physician import PatientPhysician
 from models.chat import Chat
 from auth import requires_auth, AUTH0_DOMAIN
+from auth0 import delete_auth0_user
 import requests
 import os
 
@@ -102,6 +103,7 @@ def delete_patient(id):
   patient = db.session.get(User, id)
   # Patient has to exist
   if patient and patient.is_patient:
+    delete_auth0_user(patient.email_address)
     db.session.execute(db.delete(PatientPhysician).filter_by(patient_id=id))
     db.session.delete(patient)
     db.session.commit()

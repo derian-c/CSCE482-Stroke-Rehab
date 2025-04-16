@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getPatients, createPatientByPhysician } from "@/apis/patientService";
+import { getPatients, createPatientByPhysician, deletePatientByID } from "@/apis/patientService";
 import PatientModel from "@/graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -16,7 +16,8 @@ import {
   ChevronRight,
   BarChart,
   MessageCircle,
-  UserPlus
+  UserPlus,
+  Trash2
 } from "lucide-react";
 import { useSocket } from '@/components/SocketProvider'
 import { getMessages } from '@/apis/messagesService'
@@ -64,7 +65,7 @@ const PhysicianView = ({userInfo}) => {
     onConfirm: () => {}
   });
 
-  const  [sasToken, setSasToken] = useState(null)
+  const [sasToken, setSasToken] = useState(null)
 
   const socket = useSocket()
 
@@ -219,8 +220,6 @@ const PhysicianView = ({userInfo}) => {
         messages: []
       };
       
-      // console.log("Adding new patient:", simplePatient);
-      
       // Add to patients list
       userInfo.patients.push(simplePatient);
       setPatients(userInfo.patients);
@@ -231,6 +230,45 @@ const PhysicianView = ({userInfo}) => {
       console.error("Error adding patient:", error);
       throw error;
     }
+  };
+
+  // Handle deleting a patient
+  const handleDeletePatient = async (patientId, patientName) => {
+    // Show confirmation dialog
+    showConfirmation(
+      "Delete Patient",
+      `Are you sure you want to delete ${patientName}? This action cannot be undone.`,
+      async () => {
+        try {
+          const token = await getAccessTokenSilently();
+          // Use the existing deletePatientByID function instead of deletePatientByPhysician
+          const response = await deletePatientByID(patientId, token);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete patient");
+          }
+          
+          // If the deleted patient is currently selected, clear the selection
+          if (selectedPatient && selectedPatient.id === patientId) {
+            setSelectedPatient(null);
+            setShowDetail(false);
+          }
+          
+          // Remove the patient from the list
+          setPatients(prevPatients => prevPatients.filter(p => p.id !== patientId));
+          
+          // Show success notification
+          showNotification(`Patient ${patientName} deleted successfully`, "success");
+        } catch (error) {
+          console.error("Error deleting patient:", error);
+          showNotification(`Failed to delete patient: ${error.message}`, "error");
+        }
+      },
+      "Delete",
+      "Cancel",
+      "danger"
+    );
   };
 
   // Handle Enter key press to send message
@@ -299,12 +337,9 @@ const PhysicianView = ({userInfo}) => {
   useEffect(() => {
     async function loadPatients() {
       const token = await getAccessTokenSilently()
-      // const _patients = userInfo.patients
-      // let patientsCopy = [...patients];
       console.log(userInfo.patients)
       for (let i = 0; i < userInfo.patients.length; i++) {
         
-
         // fetch patient messages
         try {
           const response = await getMessages({ 'physician_id': userInfo.id, 'patient_id': userInfo.patients[i].id }, token);
@@ -327,9 +362,6 @@ const PhysicianView = ({userInfo}) => {
       }
 
       setPatients(userInfo.patients);
-      // } else {
-      //   console.error("Failed to fetch patients");
-      // }
       setIsLoading(false);
     }
 
@@ -370,9 +402,6 @@ const PhysicianView = ({userInfo}) => {
     fetchPatientMotionFiles();
   }, [selectedPatient]);
 
-  async function handleSetSelectedFile(e){
-
-  }
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
       {/* Notification Toast */}
@@ -455,32 +484,35 @@ const PhysicianView = ({userInfo}) => {
             {patients.map((patient) => {
               const unreadCount = getUnreadMessagesCount(patient);
               return (
-                <button
-                  key={patient.id}
-                  onClick={() => handlePatientClick(patient)}
-                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center ${selectedPatient?.id === patient.id
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:text-gray-900"
-                    } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
-                >
-                  {sidebarCollapsed ? (
-                    <User className="h-6 w-6" />
-                  ) : (
-                    <>
-                      <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
-                      <div className="overflow-hidden">
-                        <div className="font-medium truncate">{isLoading ? 'Loading...' : patient.first_name + " " + patient.last_name}</div>
-                        <div className="text-xs text-gray-500 flex items-center">
-                          
+              <div key={patient.id}>
+                  <button
+                    onClick={() => handlePatientClick(patient)}
+                    className={`w-full p-4 text-left hover:bg-gray-600 transition-colors flex items-center ${selectedPatient?.id === patient.id
+                      ? "bg-gray-700 text-white"
+                      : "bg-gray-800 text-white hover:text-white"
+                      } ${sidebarCollapsed ? 'justify-center md:justify-center' : ''}`}
+                  >
+                    {sidebarCollapsed ? (
+                      <User className="h-6 w-6 text-white" />
+                    ) : (
+                      <>
+                        <User className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0" />
+                        <div className="overflow-hidden">
+                          <div className="font-medium truncate text-white">
+                            {isLoading ? 'Loading...' : patient.first_name + " " + patient.last_name}
+                          </div>
+                          <div className="text-xs text-white flex items-center">
+                            
+                          </div>
                         </div>
-                      </div>
-                      {unreadCount > 0 && (
-                        <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
-                      )}
-                      <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
-                    </>
-                  )}
-                </button>
+                        {unreadCount > 0 && (
+                          <span className="w-2 h-2 bg-red-500 rounded-full ml-2 flex-shrink-0"></span>
+                        )}
+                        <ChevronRight className="h-4 w-4 ml-auto text-white" />
+                      </>
+                    )}
+                  </button>
+                </div>
               );
             })}
             
@@ -505,8 +537,6 @@ const PhysicianView = ({userInfo}) => {
                 <UserPlus className="h-5 w-5" />
               </button>
             </div>
-
-
           </div>
         </div>
 
@@ -516,23 +546,30 @@ const PhysicianView = ({userInfo}) => {
             <div className="space-y-6">
               {/* Patient Info Header */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <User className="h-6 w-6 mr-2 text-blue-600" />
-                  {selectedPatient.first_name + " " + selectedPatient.last_name}
-                  <span className="ml-2 text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
-                    Age: {selectedPatient.age}
-                  </span>
-                </h2>
-                <p className="text-gray-600 flex items-center mt-2">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <User className="h-6 w-6 mr-2 text-blue-600" />
+                    {selectedPatient.first_name + " " + selectedPatient.last_name}
+                  </h2>
                   
-                </p>
+                  {/* Delete patient button */}
+                  <button
+                    onClick={() => handleDeletePatient(selectedPatient.id, `${selectedPatient.first_name} ${selectedPatient.last_name}`)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete patient"
+                    aria-label={`Delete ${selectedPatient.first_name} ${selectedPatient.last_name}`}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+                
                 <div className="mt-4 border-t pt-4">
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleTabChange("model")}
                       className={`px-3 py-2 rounded-md flex items-center ${activeTab === "model"
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white font-medium"
+                        : "bg-gray-700 text-white hover:bg-gray-600"
                         }`}
                     >
                       <Activity className="h-4 w-4 mr-2" />
@@ -541,8 +578,8 @@ const PhysicianView = ({userInfo}) => {
                     <button
                       onClick={() => handleTabChange("messages")}
                       className={`px-3 py-2 rounded-md flex items-center ${activeTab === "messages"
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white font-medium"
+                        : "bg-gray-700 text-white hover:bg-gray-600"
                         }`}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
@@ -591,7 +628,7 @@ const PhysicianView = ({userInfo}) => {
                       </div>
 
                       <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-                        {selectedMotionFile && sasToken ?<PatientModel file={selectedMotionFile} token={sasToken}/>:null}
+                        {selectedMotionFile && sasToken ? <PatientModel file={selectedMotionFile} token={sasToken}/> : null}
                       </div>
                     </div>
 
@@ -607,8 +644,8 @@ const PhysicianView = ({userInfo}) => {
                             onClick={() => setJointTab("readings")}
                             className={`px-3 py-2 rounded-t-md flex items-center ${
                               jointTab === "readings" 
-                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
-                                : "text-gray-700 hover:bg-gray-50"
+                                ? "bg-blue-600 text-white font-medium border-b-2 border-blue-400" 
+                                : "bg-gray-700 text-white hover:bg-gray-600"
                             }`}
                           >
                             <Activity className="h-4 w-4 mr-2" />
@@ -618,8 +655,8 @@ const PhysicianView = ({userInfo}) => {
                             onClick={() => setJointTab("files")}
                             className={`px-3 py-2 rounded-t-md flex items-center ${
                               jointTab === "files" 
-                                ? "bg-blue-50 text-blue-700 font-medium border-b-2 border-blue-600" 
-                                : "text-gray-700 hover:bg-gray-50"
+                                ? "bg-blue-600 text-white font-medium border-b-2 border-blue-400" 
+                                : "bg-gray-700 text-white hover:bg-gray-600"
                             }`}
                           >
                             <FileText className="h-4 w-4 mr-2" />
@@ -643,13 +680,13 @@ const PhysicianView = ({userInfo}) => {
                           handleViewFile={handleViewFile}
                         />
                       )}
-                            
-                            {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
-                              <div className="text-center py-8 text-gray-500">
-                                <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-                                <p>No motion files available</p>
-                              </div>
-                            )}
+                      
+                      {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
+                        <div className="text-center py-8 text-gray-500">
+                          <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                          <p>No motion files available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -728,14 +765,14 @@ const PhysicianView = ({userInfo}) => {
             <div className="h-full flex flex-col items-center justify-center text-gray-500">
               <Users className="h-16 w-16 text-gray-300 mb-4" />
               <p className="text-xl">Select a patient to view details</p>
-              <p className="mt-2 text-gray-400">Choose a patient from the sidebar to view their detailed information</p>
+              <p className="mt-2 text-gray-400">Choose a patient from the sidebar to view their information</p>
             </div>
           )}
         </div>
       </div>
       
       <AccessibilityMenu />
-    </div >
+    </div>
   );
 };
 

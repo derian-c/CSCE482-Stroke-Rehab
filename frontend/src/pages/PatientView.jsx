@@ -57,7 +57,7 @@ const PatientView = ({userInfo}) => {
   ];
   const socket = useSocket()
 
-  // Auto-scroll to bottom when messages change or tab switches to messages
+  // Auto-scroll to bottom when messages change or when tab switches to messages
   useEffect(() => {
     if (activeTab === "messages") {
       scrollToBottom();
@@ -251,7 +251,9 @@ const PatientView = ({userInfo}) => {
     <button
       onClick={() => handleTabChange(tab)}
       className={`px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap flex-1 flex items-center justify-center ${
-        activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
+        activeTab === tab 
+          ? "bg-blue-600 text-white border-b-2 border-blue-400" 
+          : "bg-gray-700 text-white hover:bg-gray-600"
       }`}
       aria-selected={activeTab === tab}
       aria-controls={`${tab}-panel`}
@@ -329,7 +331,7 @@ const PatientView = ({userInfo}) => {
         {/* Main Content */}
         <div id="main-content" className="bg-white rounded-lg shadow-md w-full mb-6" role="main">
           {/* Tabs */}
-          <div className="border-b border-gray-200 overflow-x-auto w-full">
+          <div className="border-b border-gray-200 overflow-x-auto w-full bg-white-800">
             <nav className="flex w-full" role="tablist">
               <TabButton tab="dashboard" icon={Activity} label="Dashboard" />
               <TabButton 
@@ -418,10 +420,10 @@ const PatientView = ({userInfo}) => {
                     <button 
                       key={index}
                       onClick={item.onClick}
-                      className="h-24 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-2 text-gray-900"
+                      className="h-24 bg-gray-700 rounded-lg hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-2 text-white"
                       aria-label={`Go to ${item.label}`}
                     >
-                      {React.createElement(item.icon, { className: "h-6 w-6 text-blue-600", "aria-hidden": "true" })}
+                      {React.createElement(item.icon, { className: "h-6 w-6 text-blue-400", "aria-hidden": "true" })}
                       <span className="font-medium">{item.label}</span>
                     </button>
                   ))}

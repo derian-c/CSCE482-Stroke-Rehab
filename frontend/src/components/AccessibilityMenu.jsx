@@ -4,10 +4,10 @@ import {
   Type,
   Eye,
   Volume2,
-  Monitor,
   Save,
   RotateCcw,
-  X
+  X,
+  MousePointer
 } from "lucide-react";
 
 const AccessibilityMenu = () => {
@@ -25,6 +25,22 @@ const AccessibilityMenu = () => {
     isBrowser && localStorage.getItem("accessibility-colorTheme")
       ? localStorage.getItem("accessibility-colorTheme")
       : "default"
+  );
+  
+  const [customCursorEnabled, setCustomCursorEnabled] = useState(
+    isBrowser && localStorage.getItem("accessibility-customCursorEnabled") === "true"
+  );
+  
+  const [cursorSize, setCursorSize] = useState(
+    isBrowser && localStorage.getItem("accessibility-cursorSize")
+      ? localStorage.getItem("accessibility-cursorSize")
+      : "medium"
+  );
+  
+  const [cursorColor, setCursorColor] = useState(
+    isBrowser && localStorage.getItem("accessibility-cursorColor")
+      ? localStorage.getItem("accessibility-cursorColor")
+      : "white"
   );
   
   const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(
@@ -46,6 +62,7 @@ const AccessibilityMenu = () => {
       applyFontSize(fontSize);
       applyColorTheme(colorTheme);
       applyScreenReaderMode(screenReaderMode);
+      applyCustomCursor(customCursorEnabled, cursorSize, cursorColor);
     }
     
     return () => {
@@ -107,15 +124,26 @@ const AccessibilityMenu = () => {
     }
     
     const sizeCss = `
-      body.text-size-${size} { font-size: ${fontSizeMap[size].body}; }
-      body.text-size-${size} h1 { font-size: ${fontSizeMap[size].h1}; }
-      body.text-size-${size} h2 { font-size: ${fontSizeMap[size].h2}; }
-      body.text-size-${size} h3 { font-size: ${fontSizeMap[size].h3}; }
-      body.text-size-${size} p { font-size: ${fontSizeMap[size].p}; }
+      body.text-size-${size} { font-size: ${fontSizeMap[size].body} !important; }
+      body.text-size-${size} h1:not(.accessibility-menu-controls *) { font-size: ${fontSizeMap[size].h1} !important; }
+      body.text-size-${size} h2:not(.accessibility-menu-controls *) { font-size: ${fontSizeMap[size].h2} !important; }
+      body.text-size-${size} h3:not(.accessibility-menu-controls *) { font-size: ${fontSizeMap[size].h3} !important; }
+      body.text-size-${size} p:not(.accessibility-menu-controls *) { font-size: ${fontSizeMap[size].p} !important; }
       
-      body.text-size-${size} button:not(.accessibility-button) { font-size: ${fontSizeMap[size].button}; }
-      body.text-size-${size} input, 
-      body.text-size-${size} textarea { font-size: ${fontSizeMap[size].input}; }
+      body.text-size-${size} button:not(.accessibility-button):not(.accessibility-menu-controls *) { 
+        font-size: ${fontSizeMap[size].button} !important; 
+      }
+      body.text-size-${size} input:not(.accessibility-menu-controls *), 
+      body.text-size-${size} textarea:not(.accessibility-menu-controls *) { 
+        font-size: ${fontSizeMap[size].input} !important; 
+      }
+      
+      body.text-size-${size} .text-xs { font-size: calc(${fontSizeMap[size].body} * 0.75) !important; }
+      body.text-size-${size} .text-sm { font-size: calc(${fontSizeMap[size].body} * 0.875) !important; }
+      body.text-size-${size} .text-base { font-size: ${fontSizeMap[size].body} !important; }
+      body.text-size-${size} .text-lg { font-size: calc(${fontSizeMap[size].body} * 1.125) !important; }
+      body.text-size-${size} .text-xl { font-size: calc(${fontSizeMap[size].body} * 1.25) !important; }
+      body.text-size-${size} .text-2xl { font-size: calc(${fontSizeMap[size].body} * 1.5) !important; }
       
       .accessibility-menu-controls {
         font-size: 16px !important;
@@ -132,6 +160,67 @@ const AccessibilityMenu = () => {
     `;
     
     styleEl.textContent = sizeCss;
+  };
+
+  const applyCustomCursor = (enabled, size, color) => {
+    document.body.classList.remove('cursor-custom', 'cursor-size-medium', 'cursor-size-large', 'cursor-size-xlarge', 'cursor-color-black', 'cursor-color-white', 'cursor-color-blue');
+    
+    if (!enabled) {
+      let cursorStyleEl = document.getElementById('accessibility-cursor');
+      if (cursorStyleEl) {
+        cursorStyleEl.textContent = '';
+      }
+      return;
+    }
+    
+    document.body.classList.add('cursor-custom', `cursor-size-${size}`, `cursor-color-${color}`);
+    
+    let cursorStyleEl = document.getElementById('accessibility-cursor');
+    if (!cursorStyleEl) {
+      cursorStyleEl = document.createElement('style');
+      cursorStyleEl.id = 'accessibility-cursor';
+      document.head.appendChild(cursorStyleEl);
+    }
+    
+    const cursorSizes = {
+      medium: { size: 24, scale: 1 },
+      large: { size: 32, scale: 1.33 },
+      'x-large': { size: 48, scale: 2 }
+    };
+    
+    const currentSize = cursorSizes[size];
+    const strokeWidth = currentSize.scale;
+    
+    const fillColor = color === 'white' ? '%23FFF' : 
+                     color === 'blue' ? '%230066FF' : '%23000';
+    
+    const strokeColor = color === 'white' ? '%23000' : 
+                       color === 'blue' ? '%23000' : '%23FFF';
+    
+    const defaultCursorSVG = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="${currentSize.size}" height="${currentSize.size}" viewBox="0 0 24 24"><path fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z"></path></svg>') 1 1`;
+    
+    const pointerCursorSVG = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="${currentSize.size}" height="${currentSize.size}" viewBox="0 0 24 24"><path fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z"></path><circle cx="16" cy="16" r="3" fill="${strokeColor}" stroke="${fillColor}" stroke-width="0.75"></circle></svg>') 1 1`;
+    
+    const textCursorSVG = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="${currentSize.size}" height="${currentSize.size}" viewBox="0 0 24 24"><path fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z"></path><line x1="18" y1="14" x2="18" y2="20" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"></line></svg>') 1 1`;
+    
+    const cursorCSS = `
+      * {
+        cursor: ${defaultCursorSVG}, auto !important;
+      }
+      
+      a, button, input[type="submit"], input[type="button"], input[type="checkbox"], 
+      input[type="radio"], select, label[for], .relative, [role="button"] {
+        cursor: ${pointerCursorSVG}, pointer !important;
+      }
+      
+      input[type="text"], input[type="password"], input[type="email"], input[type="number"], 
+      input[type="search"], textarea {
+        cursor: ${textCursorSVG}, text !important;
+      }
+    `;
+    
+    cursorStyleEl.textContent = cursorCSS;
+    console.log(`Applied custom cursor: size=${size}, color=${color}, enabled=${enabled}`);
   };
 
   const applyColorTheme = (theme) => {
@@ -320,6 +409,14 @@ const AccessibilityMenu = () => {
           .theme-high-contrast [role="progressbar"] > div {
             background-color: white !important;
           }
+          
+          .theme-high-contrast .bg-white.border.border-gray-300.text-black {
+            color: black !important;
+          }
+          
+          .theme-high-contrast .text-blue-200 {
+            color: #99CCFF !important;
+          }
         `;
         break;
         
@@ -332,6 +429,7 @@ const AccessibilityMenu = () => {
     }
     
     themeStyleEl.textContent = themeCss;
+    console.log(`Applied color theme: ${theme}`);
   };
 
   const applyScreenReaderMode = (enabled) => {
@@ -375,6 +473,7 @@ const AccessibilityMenu = () => {
         mainContent.setAttribute('role', 'main');
       }
     }
+    console.log(`Applied screen reader mode: ${enabled}`);
   };
 
   const speakText = (text) => {
@@ -432,10 +531,14 @@ const AccessibilityMenu = () => {
     localStorage.setItem("accessibility-colorTheme", colorTheme);
     localStorage.setItem("accessibility-textToSpeech", textToSpeechEnabled);
     localStorage.setItem("accessibility-screenReader", screenReaderMode);
+    localStorage.setItem("accessibility-customCursorEnabled", customCursorEnabled);
+    localStorage.setItem("accessibility-cursorSize", cursorSize);
+    localStorage.setItem("accessibility-cursorColor", cursorColor);
     
     applyFontSize(fontSize);
     applyColorTheme(colorTheme);
     applyScreenReaderMode(screenReaderMode);
+    applyCustomCursor(customCursorEnabled, cursorSize, cursorColor);
     
     const notification = document.createElement('div');
     notification.textContent = 'Settings saved!';
@@ -462,14 +565,21 @@ const AccessibilityMenu = () => {
     setColorTheme("default");
     setTextToSpeechEnabled(false);
     setScreenReaderMode(false);
+    setCustomCursorEnabled(false);
+    setCursorSize("medium");
+    setCursorColor("white");
     
     localStorage.removeItem("accessibility-fontSize");
     localStorage.removeItem("accessibility-colorTheme");
     localStorage.removeItem("accessibility-textToSpeech");
     localStorage.removeItem("accessibility-screenReader");
+    localStorage.removeItem("accessibility-customCursorEnabled");
+    localStorage.removeItem("accessibility-cursorSize");
+    localStorage.removeItem("accessibility-cursorColor");
     
     applyFontSize("medium");
     applyColorTheme("default");
+    applyCustomCursor(false, "medium", "white");
     
     if (speechSynthesis) {
       speechSynthesis.cancel();
@@ -482,17 +592,17 @@ const AccessibilityMenu = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="accessibility-button fixed right-4 bottom-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        aria-label="Accessibility Options"
+        aria-label="Settings"
       >
         <Settings className="h-6 w-6" />
       </button>
       
       {isOpen && (
-        <div className="accessibility-menu-panel accessibility-menu-controls fixed right-4 bottom-20 w-full max-w-md bg-white rounded-lg shadow-xl border border-gray-200 p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+        <div className="accessibility-menu-panel accessibility-menu-controls fixed right-4 bottom-20 w-full max-w-md bg-white rounded-lg shadow-xl border border-gray-200 p-4">
+          <div className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2">
+            <h2 className="text-base font-semibold text-gray-900 flex items-center">
               <Settings className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
-              Accessibility Options
+              Settings
             </h2>
             <button
               onClick={() => setIsOpen(false)}
@@ -503,9 +613,9 @@ const AccessibilityMenu = () => {
             </button>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-2">
                 <Type className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
                 Font Size
               </h3>
@@ -517,24 +627,26 @@ const AccessibilityMenu = () => {
                       setFontSize(size);
                       applyFontSize(size);
                     }}
-                    className={`accessibility-button px-3 py-2 rounded ${
+                    className={`accessibility-button text-sm px-2 py-1 rounded ${
                       fontSize === size
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                     }`}
                   >
-                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                    {size === "x-large" 
+                      ? "X-Large" 
+                      : size.charAt(0).toUpperCase() + size.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
             
             <div>
-              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-2">
                 <Eye className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
                 Color Theme
               </h3>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="flex space-x-2">
                 {[
                   { value: "default", label: "Default" },
                   { value: "colorblind", label: "Colorblind Friendly" },
@@ -546,7 +658,7 @@ const AccessibilityMenu = () => {
                       setColorTheme(theme.value);
                       applyColorTheme(theme.value);
                     }}
-                    className={`accessibility-button theme-button px-3 py-2 rounded text-center ${
+                    className={`accessibility-button text-sm px-2 py-1 rounded text-center flex-1 ${
                       colorTheme === theme.value
                         ? "bg-blue-600 text-white active"
                         : "bg-gray-100 text-gray-800 hover:bg-gray-200"
@@ -559,80 +671,148 @@ const AccessibilityMenu = () => {
             </div>
             
             <div>
-              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                <Volume2 className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
-                Text to Speech
-              </h3>
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                  <MousePointer className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
+                  Custom Cursor
+                </h3>
                 <label className="flex items-center cursor-pointer">
                   <div className="relative">
                     <input
                       type="checkbox"
                       className="sr-only"
-                      checked={textToSpeechEnabled}
-                      onChange={() => setTextToSpeechEnabled(!textToSpeechEnabled)}
+                      checked={customCursorEnabled}
+                      onChange={() => {
+                        const newValue = !customCursorEnabled;
+                        setCustomCursorEnabled(newValue);
+                        applyCustomCursor(newValue, cursorSize, cursorColor);
+                      }}
                     />
-                    <div className={`block w-10 h-6 rounded-full ${
-                      textToSpeechEnabled ? "bg-blue-600" : "bg-gray-300"
+                    <div className={`block w-10 h-5 rounded-full ${
+                      customCursorEnabled ? "bg-blue-600" : "bg-gray-300"
                     }`}></div>
-                    <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${
-                      textToSpeechEnabled ? "transform translate-x-4" : ""
+                    <div className={`dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${
+                      customCursorEnabled ? "transform translate-x-5" : ""
                     }`}></div>
                   </div>
-                  <span className="ml-3 text-sm text-gray-700">Enable text to speech</span>
                 </label>
-                
-                <button
-                  onClick={speakPageContent}
-                  disabled={!textToSpeechEnabled}
-                  className={`accessibility-button px-3 py-1 rounded ${
-                    textToSpeechEnabled
-                      ? speaking
-                        ? "bg-red-500 text-white"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  {speaking ? "Stop" : "Read Page"}
-                </button>
               </div>
+              
+              {customCursorEnabled && (
+                <div>
+                  <div className="mb-2">
+                    <h4 className="text-xs text-gray-500 mb-1">Cursor Size</h4>
+                    <div className="flex space-x-2">
+                      {["medium", "large", "x-large"].map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => {
+                            setCursorSize(size);
+                            applyCustomCursor(customCursorEnabled, size, cursorColor);
+                          }}
+                          className={`accessibility-button text-sm px-2 py-1 rounded flex-1 ${
+                            cursorSize === size
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          {size === "x-large" 
+                            ? "X-Large" 
+                            : size.charAt(0).toUpperCase() + size.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-xs text-gray-500 mb-1">Cursor Color</h4>
+                    <div className="flex space-x-2">
+                      {[
+                        { value: "white", label: "White", tooltip: "" },
+                        { value: "black", label: "Black", tooltip: "Best for high contrast" },
+                        { value: "blue", label: "Blue", tooltip: "" }
+                      ].map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => {
+                            setCursorColor(color.value);
+                            applyCustomCursor(customCursorEnabled, cursorSize, color.value);
+                          }}
+                          title={color.tooltip}
+                          className={`accessibility-button text-sm px-2 py-1 rounded flex items-center justify-center flex-1 ${
+                            cursorColor === color.value
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                          }`}
+                        >
+                          <span 
+                            className={`inline-block w-3 h-3 mr-1 rounded-full ${
+                              color.value === "black" ? "bg-black" : 
+                              color.value === "white" ? "bg-white border border-gray-300" : 
+                              "bg-blue-500"
+                            }`}
+                          ></span>
+                          {color.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>
-              <h3 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                <Monitor className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
-                Screen Reader Optimization
-              </h3>
-              <label className="flex items-center cursor-pointer">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={screenReaderMode}
-                    onChange={() => setScreenReaderMode(!screenReaderMode)}
-                  />
-                  <div className={`block w-10 h-6 rounded-full ${
-                    screenReaderMode ? "bg-blue-600" : "bg-gray-300"
-                  }`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${
-                    screenReaderMode ? "transform translate-x-4" : ""
-                  }`}></div>
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                  <Volume2 className="h-4 w-4 mr-2 text-blue-600" aria-hidden="true" />
+                  Text to Speech
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <label className="flex items-center cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={textToSpeechEnabled}
+                        onChange={() => setTextToSpeechEnabled(!textToSpeechEnabled)}
+                      />
+                      <div className={`block w-10 h-5 rounded-full ${
+                        textToSpeechEnabled ? "bg-blue-600" : "bg-gray-300"
+                      }`}></div>
+                      <div className={`dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${
+                        textToSpeechEnabled ? "transform translate-x-5" : ""
+                      }`}></div>
+                    </div>
+                  </label>
+                  
+                  <button
+                    onClick={speakPageContent}
+                    disabled={!textToSpeechEnabled}
+                    className={`accessibility-button text-sm px-2 py-1 rounded ${
+                      textToSpeechEnabled
+                        ? speaking
+                          ? "bg-red-500 text-white"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    {speaking ? "Stop" : "Read Page"}
+                  </button>
                 </div>
-                <span className="ml-3 text-sm text-gray-700">Optimize for screen readers</span>
-              </label>
+              </div>
             </div>
             
-            <div className="flex space-x-3 pt-3 border-t border-gray-200">
+            <div className="flex space-x-2 pt-2 border-t border-gray-200 mt-1">
               <button
                 onClick={saveSettings}
-                className="accessibility-button flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+                className="accessibility-button flex-1 bg-blue-600 text-white py-1.5 px-3 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
               >
                 <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                 Save Settings
               </button>
               <button
                 onClick={resetSettings}
-                className="accessibility-button flex-1 bg-gray-100 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
+                className="accessibility-button flex-1 bg-gray-100 text-gray-800 py-1.5 px-3 rounded text-sm hover:bg-gray-200 transition-colors flex items-center justify-center"
               >
                 <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
                 Reset Defaults

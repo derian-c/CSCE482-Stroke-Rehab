@@ -7,10 +7,11 @@ const PatientModel = ({file,token}) => {
 
   const containerReference = useRef(null);
   const isRendered = useRef(false);
+  let lastFile = null;
 
   useEffect(() => {
     if(!file || !token) return
-    if (isRendered.current) return;
+    if (isRendered.current && lastFile == file) return;
     isRendered.current = true;
     //Create a New Scene to render
     const scene = new THREE.Scene();
@@ -133,7 +134,9 @@ const PatientModel = ({file,token}) => {
     window.addEventListener("resize", resize);
 
     //Actually render the scene
+    let stopAnimating = false
     function animate() {
+      if(stopAnimating) return
       requestAnimationFrame(animate);
       //Updates keyframe for animation
       if (mixer) {
@@ -146,28 +149,50 @@ const PatientModel = ({file,token}) => {
     animate();
 
     // Free up resources
+    const disposeObject = (object) => {
+      // If the object is a Mesh, dispose of its geometry and material
+      if (object.isMesh) {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
+    
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            // Dispose of each material in an array
+            object.material.forEach((mat) => {
+              if (mat.map) mat.map.dispose(); // Dispose of textures
+              mat.dispose();
+            });
+          } else {
+            if (object.material.map) object.material.map.dispose(); // Dispose of texture
+            object.material.dispose();
+          }
+        }
+      }
+    
+      // If the object has children, recursively dispose them
+      if (object.children.length > 0) {
+        object.children.forEach((child) => disposeObject(child));
+      }
+    }
+
     return () => {
+      stopAnimating = true
       window.removeEventListener("resize", resize)
       if (containerReference.current) {
         containerReference.current.removeChild(renderer.domElement)
       }
       scene.traverse((object) => {
-        if (object.isMesh) {
-          object.geometry.dispose()
-          if (object.material.isMaterial) {
-            object.material.dispose()
-          } else {
-            // Dispose array materials
-            object.material.forEach((material) => material.dispose())
-          }
-        }
+        disposeObject(object)
       })
       renderer.dispose()
-      if(mixer)
+      if(mixer){
         mixer.stopAllAction()
+      }
+      lastFile = file
     }
   
-  }, []);
+  }, [file]);
   return <div ref={containerReference} className="w-full h-full"></div>;
 };
 

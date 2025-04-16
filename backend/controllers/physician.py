@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from extensions import db
 from models.user import User
 from auth import requires_auth, AUTH0_DOMAIN
+from auth0 import delete_auth0_user
 import requests
 import os
 
@@ -88,6 +89,7 @@ def create_physician():
 def delete_physician(id):
   physician = db.session.get(User, id)
   if physician and physician.is_physician:
+    delete_auth0_user(physician.email_address)
     db.session.delete(physician)
     db.session.commit()
     return jsonify({'message': 'Physician deleted successfully'})

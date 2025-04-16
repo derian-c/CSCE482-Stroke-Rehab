@@ -11,7 +11,7 @@ const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
 const audience = import.meta.env.VITE_API_AUDIENCE;
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <StrictMode>
+  //<StrictMode>
     <Auth0Provider
       domain={domain}
       clientId={clientId}
@@ -28,5 +28,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </SocketProvider>
       </BrowserRouter>
     </Auth0Provider>
-  </StrictMode>
+  //</StrictMode>
 );

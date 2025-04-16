@@ -42,6 +42,7 @@ const PhysicianView = ({userInfo}) => {
   });
 
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patientPresent, setPatientPresent] = useState(false)
   const [message, setMessage] = useState("");
   const [showDetail, setShowDetail] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +53,6 @@ const PhysicianView = ({userInfo}) => {
   const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
   const [showAddPatient, setShowAddPatient] = useState(false);
 
-  const [patientMotionFiles, setPatientMotionFiles] = useState([]);
   const [selectedMotionFile, setSelectedMotionFile] = useState(null);
   const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({
@@ -120,6 +120,7 @@ const PhysicianView = ({userInfo}) => {
       socket.emit('leave', { patient_id: selectedPatient.id, physician_id: userInfo.id })
     }
     setSelectedPatient(patient);
+    setPatientPresent(true)
     socket.emit('join', { patient_id: patient.id, physician_id: userInfo.id })
     setShowDetail(true);
 
@@ -178,8 +179,7 @@ const PhysicianView = ({userInfo}) => {
     }
 
     function onNewMotionFileEvent(data){
-      setPatientMotionFiles((oldMotionFiles) => [...oldMotionFiles, data])
-      console.log('New file')
+      setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: [...oldPatient.motionFiles,data]}})
     }
     socket.on('message', onMessageEvent)
     socket.on('new_file', onNewMotionFileEvent)
@@ -329,8 +329,11 @@ const PhysicianView = ({userInfo}) => {
     }
   };
 
-  const handleViewFile = (file) => {
-    console.log("Opening file:", file);
+  const handleViewFile = async (file) => {
+    setSelectedMotionFile(file)
+    const token = await getAccessTokenSilently()
+    const sas_token = (await (await getSasToken('motion-files',token)).json()).token
+    setSasToken(sas_token)
   };
 
   // Check for unread messages for a specific patient
@@ -377,30 +380,26 @@ const PhysicianView = ({userInfo}) => {
 
   useEffect(() => {
     async function fetchPatientMotionFiles() {
-      if (!selectedPatient) return;
+      if (!patientPresent) return;
 
       try {
         const token = await getAccessTokenSilently();
         const response = await getMotionFiles(selectedPatient.id, token);
         if (response.ok) {
           const files = await response.json();
-          setPatientMotionFiles(files);
-          const sas_token = (await (await getSasToken('motion-files',token)).json()).token
-          setSasToken(sas_token)
+          setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: files}})
         } else {
           console.error("Failed to fetch motion files");
-          setPatientMotionFiles([]);
           setSelectedMotionFile(null);
         }
       } catch (error) {
         console.error("Error fetching motion files:", error);
-        setPatientMotionFiles([]);
         setSelectedMotionFile(null);
       }
     }
 
     fetchPatientMotionFiles();
-  }, [selectedPatient]);
+  }, [patientPresent]);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
@@ -602,31 +601,7 @@ const PhysicianView = ({userInfo}) => {
                         <Activity className="h-5 w-5 mr-2 text-blue-600" />
                         Patient Model
                       </h3>
-
-                      {/* Motion File Selector */}
-                      <div className="flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-gray-500" />
-                        <select
-                          className="border border-gray-300 rounded-md text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={selectedMotionFile?.id || ""}
-                          onChange={async (e) => {
-                            const fileId = e.target.value;
-                            const file = patientMotionFiles.find(f => f.id.toString() === fileId);
-                            const token = await getAccessTokenSilently()
-                            const sas_token = (await (await getSasToken('motion-files',token)).json()).token
-                            setSasToken(sas_token)
-                            setSelectedMotionFile(file);
-                          }}
-                        >
-                          <option value="">Select motion file</option>
-                          {patientMotionFiles.map(file => (
-                            <option key={file.id} value={file.id}>
-                              {file.name} ({file.type})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
+                      
                       <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
                         {selectedMotionFile && sasToken ? <PatientModel file={selectedMotionFile} token={sasToken}/> : null}
                       </div>

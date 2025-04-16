@@ -4,6 +4,11 @@ from models.patient_document import PatientDocument, DocumentType
 from models.user import User
 from auth import requires_auth
 from datetime import datetime
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 patient_documents = Blueprint('patient_documents', __name__, url_prefix='/patient_documents')
 
@@ -106,7 +111,15 @@ def delete_patient_document(id):
     document = db.session.get(PatientDocument, id)
     if not document:
         return jsonify({'error': 'Patient document does not exist'}), 404
-
+    
+    # Delete blob as well
+    account_name = 'capstorage2025'
+    account_key = os.environ.get('AZURE_ACCESS_KEY')
+    blob = BlobClient(account_url=f'https://{account_name}.blob.core.windows.net',
+                        container_name='patient-records',
+                        blob_name=document.name,
+                        credential=account_key)
+    blob.delete_blob()
     db.session.delete(document)
     db.session.commit()
     return jsonify({'message': 'Patient document deleted successfully'})

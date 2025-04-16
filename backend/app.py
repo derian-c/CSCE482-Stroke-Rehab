@@ -17,7 +17,8 @@ from auth import requires_auth, AuthError
 from talisman import Talisman
 from models.patient_document import PatientDocument
 from datetime import datetime, timedelta, timezone
-from azure.storage.blob import generate_container_sas, ContainerSasPermissions
+from azure.storage.blob import generate_container_sas, ContainerSasPermissions, BlobClient, ContainerClient, ContentSettings
+import requests
 
 
 load_dotenv()
@@ -84,6 +85,60 @@ def get_sas_token(container_name):
     expiry=datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
   )
   return jsonify({'token': sas_token})
+
+@app.route('/file_upload', methods=['POST'])
+def file_upload():
+
+  # Get file data from blob
+  data = request.get_json()
+  filename = data.get('filename')
+  device_id = data.get('device_id')
+  account_name = 'capstorage2025'
+  account_key = os.environ.get('AZURE_ACCESS_KEY')
+  blob = BlobClient(account_url=f'https://{account_name}.blob.core.windows.net',
+                    container_name='motion-files',
+                    blob_name=filename,
+                    credential=account_key)
+  downloader = blob.download_blob(max_concurrency=1, encoding='UTF-8')
+  file_data = downloader.readall()
+
+  # Send file to converter
+  files = {'file': (filename, file_data)}
+  converter_ip = os.environ.get('CONVERTER_IP_ADDRESS')
+  response = requests.post(f'http://{converter_ip}:5050/convert', files=files)
+
+  # Receive file and upload
+  converted_file = response.content
+  container = ContainerClient(account_url=f'https://{account_name}.blob.core.windows.net',
+                              container_name='motion-files',
+                              credential=account_key)
+  
+  device = db.session.get(Device,device_id)
+  new_filename = f'{device.patient.id}_{datetime.now(timezone.utc)}.gltf'
+  new_blob = container.upload_blob(name=new_filename,
+                        data=converted_file,
+                        overwrite=True,
+                        content_settings=ContentSettings(content_type='model/gltf+json'))
+  # Map file to database
+  motion_file = Motion_File(name=new_filename,
+                            type='gltf',
+                            url=new_blob.url,
+                            patient_id=device.patient.id)
+  db.session.add(motion_file)
+  db.session.commit()
+  # Send new file message to physician
+  chat_id = db.session.scalars(db.select(Chat).filter_by(patient_id=device.patient.id)).first().id
+  file_dict = motion_file.dict()
+  # datetime is not JSON serializable
+  file_dict['createdAt'] = str(file_dict['createdAt'])
+  socket.emit('new_file',data=file_dict,to=chat_id)
+  return jsonify({'message': 'Successfully uploaded file'})
+
+  
+
+
+
+
 
 
 if __name__ == '__main__':

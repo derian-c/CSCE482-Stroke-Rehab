@@ -176,9 +176,16 @@ const PhysicianView = ({userInfo}) => {
         // If messages tab is not active, the message remains unread
       }
     }
+
+    function onNewMotionFileEvent(data){
+      setPatientMotionFiles((oldMotionFiles) => [...oldMotionFiles, data])
+      console.log('New file')
+    }
     socket.on('message', onMessageEvent)
+    socket.on('new_file', onNewMotionFileEvent)
     return () => {
       socket.off('message', onMessageEvent)
+      socket.off('new_file', onNewMotionFileEvent)
     }
   }, [activeTab]);
 
@@ -378,15 +385,8 @@ const PhysicianView = ({userInfo}) => {
         if (response.ok) {
           const files = await response.json();
           setPatientMotionFiles(files);
-          // Optionally select the first file by default
           const sas_token = (await (await getSasToken('motion-files',token)).json()).token
           setSasToken(sas_token)
-          console.log(sas_token)
-          if (files.length > 0) {
-            setSelectedMotionFile(files[0]);
-          } else {
-            setSelectedMotionFile(null);
-          }
         } else {
           console.error("Failed to fetch motion files");
           setPatientMotionFiles([]);

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, use } from "react";
+import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -9,7 +9,7 @@ const PatientModel = ({file,token}) => {
   const isRendered = useRef(false);
 
   useEffect(() => {
-    if(!file || !token) return;
+    if(!file || !token) return
     if (isRendered.current) return;
     isRendered.current = true;
     //Create a New Scene to render
@@ -114,7 +114,9 @@ const PatientModel = ({file,token}) => {
         (xhr) => {
           // Shows loading percentage
           const progress = (xhr.loaded / xhr.total) * 100;
-          console.log(`Loading: ${progress.toFixed(2)}%`);
+          if(progress%10 <= .05){
+            console.log(`Loading: ${progress.toFixed(2)}%`);
+          }
         },
         (error) => {
           console.error(error);
@@ -123,11 +125,12 @@ const PatientModel = ({file,token}) => {
     }
 
     //When window is resized adjust camera and render size
-    window.addEventListener("resize", () => {
+    const resize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    }
+    window.addEventListener("resize", resize);
 
     //Actually render the scene
     function animate() {
@@ -141,6 +144,29 @@ const PatientModel = ({file,token}) => {
     }
 
     animate();
+
+    // Free up resources
+    return () => {
+      window.removeEventListener("resize", resize)
+      if (containerReference.current) {
+        containerReference.current.removeChild(renderer.domElement)
+      }
+      scene.traverse((object) => {
+        if (object.isMesh) {
+          object.geometry.dispose()
+          if (object.material.isMaterial) {
+            object.material.dispose()
+          } else {
+            // Dispose array materials
+            object.material.forEach((material) => material.dispose())
+          }
+        }
+      })
+      renderer.dispose()
+      if(mixer)
+        mixer.stopAllAction()
+    }
+  
   }, []);
   return <div ref={containerReference} className="w-full h-full"></div>;
 };

@@ -5,6 +5,12 @@ from models.motion_file import Motion_File
 from models.user import User
 from auth import requires_auth
 from datetime import datetime
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
 
 motion_files = Blueprint('motion_files', __name__, url_prefix='/motion_files')
 
@@ -94,6 +100,14 @@ def delete_motion_file(id):
   if not motion_file:
     return jsonify({'error': 'Motion_File does not exist'}), 422
   
+  # Delete blob as well
+  account_name = 'capstorage2025'
+  account_key = os.environ.get('AZURE_ACCESS_KEY')
+  blob = BlobClient(account_url=f'https://{account_name}.blob.core.windows.net',
+                      container_name='motion-files',
+                      blob_name=motion_file.name,
+                      credential=account_key)
+  blob.delete_blob()
   db.session.delete(motion_file)
   db.session.commit()
   return jsonify({'message': 'Motion_File deleted successfully'})

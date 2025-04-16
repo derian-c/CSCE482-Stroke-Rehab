@@ -113,7 +113,7 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
 
   // Handle file upload
   const handleFileUpload = async (event, documentType) => {
-    const file = event.target.files[0];
+    let file = event.target.files[0];
     if (!file) return;
     
     // Validate file is PDF
@@ -127,11 +127,12 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
     
     try {
       // uploading file to blob storage should go here
-      const uploadUrl = await uploadFileToStorage(file);
+      const newFilename = `${patientId}_${file.name}`
+      const uploadUrl = await uploadFileToStorage(file, newFilename);
       
       const token = await getAccessTokenSilently();
       const documentData = {
-        name: file.name,
+        name: newFilename,
         url: uploadUrl,
         type: documentType,
         patient_id: patientId
@@ -157,7 +158,7 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
   };
 
   // Placeholder function for file upload 
-  const uploadFileToStorage = async (file) => {
+  const uploadFileToStorage = async (file, newFilename) => {
     // uploading file to blob storage logic should go here
     const token = await getAccessTokenSilently()
     const response = await getSasToken('patient-records',token)
@@ -169,7 +170,6 @@ const MedicalRecords = ({ patientId, initialSelectedType = null }) => {
     const blobServiceClient = new BlobServiceClient(`https://${storageAccountName}.blob.core.windows.net?${sasToken}`)
 
     const containerClient = blobServiceClient.getContainerClient(containerName)
-    const newFilename = `${Date.now()}_${file.name}`
     const blobClient = containerClient.getBlockBlobClient(newFilename)
 
 

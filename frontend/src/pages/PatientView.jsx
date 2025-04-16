@@ -291,11 +291,7 @@ const PatientView = ({userInfo}) => {
         cancelText={confirmDialog.cancelText}
         type={confirmDialog.type}
       />
-      
-      {/* Skip to content link for keyboard users */}
-      <a href="#main-content" className="skip-to-content">
-        Skip to content
-      </a>
+    
       
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}

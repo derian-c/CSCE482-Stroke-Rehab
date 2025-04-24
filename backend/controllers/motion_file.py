@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from sqlalchemy import except_, null
 from extensions import db
 from models.motion_file import Motion_File
@@ -18,6 +18,8 @@ motion_files = Blueprint('motion_files', __name__, url_prefix='/motion_files')
 @motion_files.route('/', methods=['GET'])
 @requires_auth
 def get_motion_files():
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   motion_files = db.session.execute(db.select(Motion_File)).scalars()
   return jsonify([motion_file.dict() for motion_file in motion_files])
 
@@ -25,6 +27,8 @@ def get_motion_files():
 @motion_files.route('<int:id>', methods=['GET'])
 @requires_auth
 def get_motion_file(id):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   motion_file = db.session.get(Motion_File, id)
   if motion_file:
     return jsonify(motion_file.dict())
@@ -34,6 +38,8 @@ def get_motion_file(id):
 @motion_files.route('/create', methods=['POST'])
 @requires_auth
 def create_motion_file():
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   request_data = request.get_json()
 
   if not request_data or 'type' not in request_data or 'url' not in request_data or 'name' not in request_data or 'email' not in request_data:
@@ -58,6 +64,8 @@ def create_motion_file():
 @motion_files.route('/<int:id>/assign', methods=['PUT'])
 @requires_auth
 def assign_motion_file(id):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   motion_file = db.session.get(Motion_File, id)
   if not motion_file:
     return jsonify({'error': 'Motion_File does not exist'}), 422
@@ -96,6 +104,8 @@ def assign_motion_file(id):
 @motion_files.route('/delete/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_motion_file(id):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   motion_file = db.session.get(Motion_File, id)
   if not motion_file:
     return jsonify({'error': 'Motion_File does not exist'}), 422
@@ -116,6 +126,8 @@ def delete_motion_file(id):
 @motion_files.route('/patient/<int:patient_id>', methods=['GET'])
 @requires_auth
 def get_patient_motion_files(patient_id):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   assignments = db.session.query(Motion_File).filter_by(patient_id=patient_id).all()
   if assignments:
     return jsonify([assignment.dict() for assignment in assignments])
@@ -126,6 +138,8 @@ def get_patient_motion_files(patient_id):
 @motion_files.route('patient/<int:patient_id>/after/<date>', methods=['GET'])
 @requires_auth
 def get_patient_motion_files_after_date(patient_id, date):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   try:
     target_date = datetime.strptime(date, '%Y-%m-%d')
     assignments = db.session.query(Motion_File).filter(Motion_File.patient_id==patient_id, Motion_File.createdAt >= target_date).all()

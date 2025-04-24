@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_migrate import Migrate
 from extensions import db, socket
@@ -11,6 +11,7 @@ from models.user import User
 from models.patient_physician import PatientPhysician
 from models.motion_file import Motion_File
 from models.medication import Medication
+from models.motion_reading import MotionReading
 import controllers.messaging
 import controllers.connection
 from auth import requires_auth, AuthError
@@ -19,6 +20,7 @@ from models.patient_document import PatientDocument
 from datetime import datetime, timedelta, timezone
 from azure.storage.blob import generate_container_sas, ContainerSasPermissions, BlobClient, ContainerClient, ContentSettings
 import requests
+import math
 
 
 load_dotenv()
@@ -58,6 +60,9 @@ app.register_blueprint(motion_files)
 from controllers.medication import medications
 app.register_blueprint(medications)
 
+from controllers.motion_readings import motion_readings
+app.register_blueprint(motion_readings)
+
 socket.init_app(app=app, cors_allowed_origins=frontend_url)
 
 
@@ -77,6 +82,8 @@ def private():
 @app.route('/sas_token/<string:container_name>',methods=['GET'])
 @requires_auth
 def get_sas_token(container_name):
+  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   sas_token = generate_container_sas(
     account_name='capstorage2025',
     container_name=container_name,
@@ -100,8 +107,8 @@ def file_upload():
                     blob_name=filename,
                     credential=account_key)
   downloader = blob.download_blob(max_concurrency=1, encoding='UTF-8')
+      
   file_data = downloader.readall()
-
   # Send file to converter
   files = {'file': (filename, file_data)}
   converter_ip = os.environ.get('CONVERTER_IP_ADDRESS')
@@ -125,21 +132,38 @@ def file_upload():
                             url=new_blob.url,
                             patient_id=device.patient.id)
   db.session.add(motion_file)
+  db.session.flush()
+
+  # Parse sto file and determine min and max values 
+  farr = file_data.split('\n')
+  labelarr = farr[4].split()
+  min_max_dict = {}
+  for line in farr[5:]:
+    readings = line.split()
+    for i in range(len(readings)):
+      double_reading = float(readings[i])*180/math.pi
+      if double_reading != 0:
+        if min_max_dict.get(labelarr[i]):
+          min_max_dict[labelarr[i]][0] = min(min_max_dict[labelarr[i]][0],double_reading)
+          min_max_dict[labelarr[i]][1] = max(min_max_dict[labelarr[i]][1],double_reading)
+        else:
+          min_max_dict[labelarr[i]] = [double_reading,double_reading]
+  motion_readings = []
+  for (key, [minim,maxim]) in min_max_dict.items():
+    if key != 'time':
+      motion_reading = MotionReading(name=key,min=minim,max=maxim,motion_file_id=motion_file.id)
+      db.session.add(motion_reading)
+      db.session.flush()
+      motion_readings.append(motion_reading)
+
   db.session.commit()
   # Send new file message to physician
   chat_id = db.session.scalars(db.select(Chat).filter_by(patient_id=device.patient.id)).first().id
   file_dict = motion_file.dict()
   # datetime is not JSON serializable
   file_dict['createdAt'] = str(file_dict['createdAt'])
-  socket.emit('new_file',data=file_dict,to=chat_id)
+  socket.emit('new_file',data={'motion_file':file_dict,'motion_readings':[mr.dict() for mr in motion_readings]},to=chat_id)
   return jsonify({'message': 'Successfully uploaded file'})
-
-  
-
-
-
-
-
 
 if __name__ == '__main__':
   socket.run(app,debug=True,port=8000)

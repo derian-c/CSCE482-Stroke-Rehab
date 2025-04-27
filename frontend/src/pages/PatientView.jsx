@@ -23,6 +23,9 @@ import MedicalRecords from '../components/MedicalRecords';
 import Medications from '../components/Medications';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import PatientModel from "@/graphics/render";
+import { getMotionFiles } from "@/apis/motionFileService";
+import { getSasToken } from '@/apis/sasTokenService';
 
 const PatientView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -35,6 +38,13 @@ const PatientView = ({userInfo}) => {
   
   // messages state
   const [messages, setMessages] = useState([]);
+
+  const [latestMotionFile, setLatestMotionFile] = useState(null);
+  const [sasToken, setSasToken] = useState(null);
+
+  const [highContrastMode, setHighContrastMode] = useState(
+    document.body.classList.contains('theme-high-contrast')
+  );
   
   // Notification and confirmation dialog states
   const [notification, setNotification] = useState(null);
@@ -70,6 +80,70 @@ const PatientView = ({userInfo}) => {
       setSelectedDocumentType(null);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    
+    const checkHighContrastMode = () => {
+      const isHighContrast = document.body.classList.contains('theme-high-contrast');
+      setHighContrastMode(isHighContrast);
+    };
+    
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          checkHighContrastMode();
+        }
+      });
+    });
+    
+    
+    observer.observe(document.body, { attributes: true });
+    
+    
+    checkHighContrastMode();
+    
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchMotionFiles = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        
+        // Fetch motion files
+        const response = await getMotionFiles(userInfo.id, token);
+        if (response.ok) {
+          const files = await response.json();
+          if (files && files.length > 0) {
+            // Sort files by creation date (newest first)
+            const sortedFiles = files.sort((a, b) => 
+              new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            // Set the latest file
+            setLatestMotionFile(sortedFiles[0]);
+            
+            // Get SAS token for accessing the file
+            const sasResponse = await getSasToken('motion-files', token);
+            if (sasResponse.ok) {
+              const sasData = await sasResponse.json();
+              setSasToken(sasData.token);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching motion files:", error);
+        showNotification("Failed to load patient model", "error");
+      }
+    };
+  
+    if (userInfo && userInfo.id) {
+      fetchMotionFiles();
+    }
+  }, [userInfo, getAccessTokenSilently]);
 
   const scrollToBottom = () => {
     // Use setTimeout to ensure the DOM has updated before scrolling
@@ -346,60 +420,22 @@ const PatientView = ({userInfo}) => {
             {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
               <div id="dashboard-panel" role="tabpanel" aria-labelledby="dashboard-tab">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="mb-4 flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Exercise Progress
-                      </h2>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4" role="progressbar" aria-valuenow={exerciseProgress} aria-valuemin="0" aria-valuemax="100">
-                      <div
-                        className="bg-blue-600 h-4 rounded-full transition-all duration-300"
-                        style={{ width: `${exerciseProgress}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2 flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-1 text-green-500" aria-hidden="true" />
-                      {exerciseProgress}% of weekly exercises completed
-                    </p>
+                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                  <div className="mb-4 flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Patient Model
+                    </h2>
                   </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="mb-4 flex items-center">
-                      <Medal className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Treatment Milestones
-                      </h2>
-                    </div>
-                    <div className="space-y-4">
-                      {milestones.map((milestone) => (
-                        <div key={milestone.id}>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm text-gray-900 flex items-center">
-                              <CheckCircle className={`h-3 w-3 mr-1 ${milestone.progress === 100 ? "text-green-500" : "text-blue-600"}`} aria-hidden="true" />
-                              {milestone.name}
-                            </span>
-                            <span className="text-sm text-gray-900">
-                              {milestone.progress}%
-                            </span>
-                          </div>
-                          <div 
-                            className="w-full bg-gray-200 rounded-full h-4" 
-                            role="progressbar"
-                            aria-valuenow={milestone.progress}
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                          >
-                            <div
-                              className={`${milestone.progress === 100 ? "bg-green-500" : "bg-blue-600"} h-4 rounded-full transition-all duration-300`}
-                              style={{ width: `${milestone.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
+                    {latestMotionFile && sasToken ? (
+                      <PatientModel file={latestMotionFile} token={sasToken} />
+                    ) : (
+                      <div className="text-center text-gray-500">
+                        <Activity className="h-12 w-12 mx-auto text-gray-300 mb-2" aria-hidden="true" />
+                        <p>No motion files available</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -451,7 +487,9 @@ const PatientView = ({userInfo}) => {
                               className={`max-w-[80%] rounded-lg p-3 ${
                                 isFromMe
                                   ? 'bg-blue-600 text-white'
-                                  : 'bg-white border border-gray-300 text-black'
+                                  : highContrastMode 
+                                    ? 'bg-black border border-white text-white' // High contrast styling
+                                    : 'bg-white border border-gray-300 text-black'
                               }`}
                             >
                               <div className="flex items-center">
@@ -461,7 +499,11 @@ const PatientView = ({userInfo}) => {
                               </div>
                               <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
                               <div className={`text-xs mt-1 text-right ${
-                                isFromMe ? 'text-blue-200' : 'text-gray-400'
+                                isFromMe 
+                                  ? 'text-blue-200' 
+                                  : highContrastMode
+                                    ? 'text-gray-300' // High contrast timestamp color
+                                    : 'text-gray-400'
                               }`}>
                                 {formatMessageDate(msg.timestamp)}
                               </div>

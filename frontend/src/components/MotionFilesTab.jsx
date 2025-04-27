@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Calendar, FileText } from "lucide-react";
+import { Calendar, FileText, Search } from "lucide-react";
 
 const MotionFilesTab = ({ selectedPatient, formatDate, handleViewFile }) => {
   const [fileSort, setFileSort] = useState("newest");
@@ -13,9 +13,9 @@ const MotionFilesTab = ({ selectedPatient, formatDate, handleViewFile }) => {
     
     switch(fileSort) {
       case 'newest':
-        return files.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+        return files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       case 'oldest':
-        return files.sort((a, b) => new Date(a.uploadDate) - new Date(b.uploadDate));
+        return files.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       default:
         return files;
     }
@@ -26,7 +26,7 @@ const MotionFilesTab = ({ selectedPatient, formatDate, handleViewFile }) => {
     
     return sortedMotionFiles.filter(file => {
       // Convert file date to MM/DD/YYYY format for comparison
-      const fileDate = new Date(file.uploadDate);
+      const fileDate = new Date(file.createdAt);
       if (isNaN(fileDate)) return false;
       
       const month = String(fileDate.getMonth() + 1).padStart(2, '0');
@@ -99,14 +99,19 @@ const MotionFilesTab = ({ selectedPatient, formatDate, handleViewFile }) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            value={dateFilter}
-            onChange={handleDateInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Filter by date (MM/DD/YYYY)"
-            className="flex-1 text-sm border rounded p-1"
-          />
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={dateFilter}
+              onChange={handleDateInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Filter by date (MM/DD/YYYY)"
+              className="w-full pl-8 pr-2 py-1 text-sm border rounded"
+            />
+          </div>
           <button
             onClick={handleFilterByDate}
             className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"

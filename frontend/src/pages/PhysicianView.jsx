@@ -33,6 +33,7 @@ import { getSasToken } from '@/apis/sasTokenService'
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
   const [patients, setPatients] = useState([]);
+  const [motionReadings, setMotionReadings] = useState({});
 
   // State to track which messages have been read - stored in localStorage
   const [readMessageIds, setReadMessageIds] = useState(() => {
@@ -178,9 +179,25 @@ const PhysicianView = ({userInfo}) => {
       }
     }
 
-    function onNewMotionFileEvent(data){
-      setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: [...oldPatient.motionFiles,data.motion_file]}})
+    function onNewMotionFileEvent(data) {
+      setSelectedPatient((oldPatient) => {
+        return {
+          ...oldPatient, 
+          motionFiles: [...(oldPatient.motionFiles || []), data.motion_file]
+        };
+      });
+
+      if (data.motion_readings && data.motion_readings.length > 0) {
+        setMotionReadings(prevReadings => {
+          const newReadingsMap = {};
+          newReadingsMap[data.motion_file.id] = data.motion_readings;
+          return {...prevReadings, ...newReadingsMap};
+        });
+      }
+
+      showNotification(`New motion file uploaded: ${data.motion_file.name}`, "info");
     }
+    
     socket.on('message', onMessageEvent)
     socket.on('new_file', onNewMotionFileEvent)
     return () => {
@@ -331,10 +348,34 @@ const PhysicianView = ({userInfo}) => {
   };
 
   const handleViewFile = async (file) => {
-    setSelectedMotionFile(file)
-    const token = await getAccessTokenSilently()
-    const sas_token = (await (await getSasToken('motion-files',token)).json()).token
-    setSasToken(sas_token)
+    setSelectedMotionFile(file);
+    
+    const token = await getAccessTokenSilently();
+    const sas_token = (await (await getSasToken('motion-files', token)).json()).token;
+    setSasToken(sas_token);
+    
+    if (!motionReadings[file.id]) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/motion_readings/${file.id}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setMotionReadings(prevReadings => ({
+            ...prevReadings,
+            [file.id]: data
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching motion readings:", error);
+        showNotification("Failed to load motion readings", "error");
+      }
+    }
   };
 
   // Check for unread messages for a specific patient
@@ -643,8 +684,9 @@ const PhysicianView = ({userInfo}) => {
                       {jointTab === "readings" && (
                         <MotionReadingsTab 
                           selectedPatient={selectedPatient}
+                          selectedMotionFile={selectedMotionFile}
+                          motionReadings={selectedMotionFile && motionReadings[selectedMotionFile.id] ? motionReadings[selectedMotionFile.id] : []}
                           formatDate={formatDate}
-                          getJointStatusColor={getJointStatusColor}
                         />
                       )}
                       

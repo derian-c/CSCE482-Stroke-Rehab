@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from extensions import db
 from models.medication import Medication
 from models.user import User
@@ -12,6 +12,8 @@ medications = Blueprint('medications', __name__, url_prefix='/medications')
 @medications.route('/patient/<int:patient_id>', methods=['GET'])
 @requires_auth
 def get_patient_medications(patient_id):
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     patient = db.session.get(User, patient_id)
     if not patient or not patient.is_patient:
         return jsonify({'error': 'Patient does not exist'}), 422
@@ -23,6 +25,8 @@ def get_patient_medications(patient_id):
 @medications.route('/<int:id>', methods=['GET'])
 @requires_auth
 def get_medication(id):
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     medication = db.session.get(Medication, id)
     if medication:
         return jsonify(medication.dict())
@@ -32,6 +36,8 @@ def get_medication(id):
 @medications.route('/', methods=['POST'])
 @requires_auth
 def create_medication():
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     data = request.get_json()
     
     patient_id = data.get('patient_id')
@@ -65,6 +71,8 @@ def create_medication():
 @medications.route('/<int:id>', methods=['PUT'])
 @requires_auth
 def update_medication(id):
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     medication = db.session.get(Medication, id)
     if not medication:
         return jsonify({'error': 'Medication does not exist'}), 422
@@ -82,6 +90,8 @@ def update_medication(id):
 @medications.route('/<int:id>/log', methods=['POST'])
 @requires_auth
 def log_medication(id):
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     medication = db.session.get(Medication, id)
     if not medication:
         return jsonify({'error': 'Medication does not exist'}), 422
@@ -96,6 +106,8 @@ def log_medication(id):
 @medications.route('/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_medication(id):
+    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+      return jsonify({'error': 'Not authorized'}), 401
     medication = db.session.get(Medication, id)
     if not medication:
         return jsonify({'error': 'Medication does not exist'}), 422

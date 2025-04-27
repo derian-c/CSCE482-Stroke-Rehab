@@ -12,6 +12,8 @@ physicians = Blueprint('physicians', __name__, url_prefix='/physicians')
 @physicians.route('/', methods=['GET'])
 @requires_auth
 def get_physicians():
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   physicians = db.session.scalars(db.select(User).filter_by(is_physician=True))
   return jsonify([physician.dict() for physician in physicians])
 
@@ -19,6 +21,8 @@ def get_physicians():
 @physicians.route('/<int:id>', methods=['GET'])
 @requires_auth
 def get_physician(id):
+  if 'Admin' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   # Physician must exist
   if physician and physician.is_physician:
@@ -29,6 +33,8 @@ def get_physician(id):
 @physicians.route('/<int:id>', methods=['PUT'])
 @requires_auth
 def update_physician(id):
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   # Physician must exist
   if physician and physician.is_physician:
@@ -44,6 +50,8 @@ def update_physician(id):
 @physicians.route('/', methods=['POST'])
 @requires_auth
 def create_physician():
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   data = request.get_json()
   first_name = data.get('first_name')
   last_name = data.get('last_name')
@@ -87,6 +95,8 @@ def create_physician():
 @physicians.route('/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_physician(id):
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   if physician and physician.is_physician:
     delete_auth0_user(physician.email_address)

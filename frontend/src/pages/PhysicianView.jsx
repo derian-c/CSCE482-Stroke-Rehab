@@ -179,7 +179,7 @@ const PhysicianView = ({userInfo}) => {
     }
 
     function onNewMotionFileEvent(data){
-      setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: [...oldPatient.motionFiles,data]}})
+      setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: [...oldPatient.motionFiles,data.motion_file]}})
     }
     socket.on('message', onMessageEvent)
     socket.on('new_file', onNewMotionFileEvent)

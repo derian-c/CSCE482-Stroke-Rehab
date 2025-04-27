@@ -12,6 +12,8 @@ admins = Blueprint('admins', __name__, url_prefix='/admins')
 @admins.route('/', methods=['GET'])
 @requires_auth
 def get_admins():
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   admins = db.session.scalars(db.select(User).filter_by(is_admin=True))
   return jsonify([admin.dict() for admin in admins])
 
@@ -19,6 +21,8 @@ def get_admins():
 @admins.route('/<int:id>', methods=['GET'])
 @requires_auth
 def get_admin(id):
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   admin = db.session.get(User, id)
   # Admin must exist
   if admin and admin.is_admin:
@@ -29,6 +33,8 @@ def get_admin(id):
 @admins.route('/<int:id>', methods=['PUT'])
 @requires_auth
 def update_admin(id):
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   admin = db.session.get(User, id)
   # Admin must exist
   if admin and admin.is_admin:
@@ -44,6 +50,8 @@ def update_admin(id):
 @admins.route('/', methods=['POST'])
 @requires_auth
 def create_admin():
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   data = request.get_json()
   first_name = data.get('first_name')
   last_name = data.get('last_name')
@@ -87,6 +95,8 @@ def create_admin():
 @admins.route('/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete_admin(id):
+  if 'Admin' not in g.current_user_roles:
+    return jsonify({'error': 'Not authorized'}), 401
   admin = db.session.get(User, id)
   if admin and admin.is_admin:
     delete_auth0_user(admin.email_address)

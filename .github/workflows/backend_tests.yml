@@ -11,7 +11,7 @@ on:
 
 env:
   TEST_DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
-  AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+  AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN_ONLY }}
   AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
   API_AUDIENCE: ${{ secrets.API_AUDIENCE }}
   TEST_USER_EMAIL: ${ secrets.TEST_USER_EMAIL }

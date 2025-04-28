@@ -53,6 +53,9 @@ const PhysicianView = ({userInfo}) => {
   const selectedPatientRef = useRef();
   const messagesEndRef = useRef(); // Reference for messages container for auto-scrolling
   const [showAddPatient, setShowAddPatient] = useState(false);
+  const [highContrastMode, setHighContrastMode] = useState(
+    document.body.classList.contains('theme-high-contrast')
+  );
 
   const [selectedMotionFile, setSelectedMotionFile] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -149,6 +152,34 @@ const PhysicianView = ({userInfo}) => {
       scrollToBottom();
     }
   };
+
+  useEffect(() => {
+    
+    const checkHighContrastMode = () => {
+      const isHighContrast = document.body.classList.contains('theme-high-contrast');
+      setHighContrastMode(isHighContrast);
+    };
+    
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          checkHighContrastMode();
+        }
+      });
+    });
+    
+    
+    observer.observe(document.body, { attributes: true });
+    
+    
+    checkHighContrastMode();
+    
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     function onMessageEvent(data) {
@@ -724,10 +755,13 @@ const PhysicianView = ({userInfo}) => {
                               className={`flex ${msg.sender == userInfo.id ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-[80%] rounded-lg p-3 ${msg.sender == userInfo.id
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-white border border-gray-300 text-black'
-                                  }`}
+                                className={`max-w-[80%] rounded-lg p-3 ${
+                                  msg.sender == userInfo.id
+                                    ? 'bg-blue-600 text-white'
+                                    : highContrastMode
+                                      ? 'bg-black border border-white text-white' 
+                                      : 'bg-white border border-gray-300 text-black'
+                                }`}
                               >
                                 <div className="flex items-center">
                                   <span className="font-medium text-sm">
@@ -735,8 +769,13 @@ const PhysicianView = ({userInfo}) => {
                                   </span>
                                 </div>
                                 <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
-                                <div className={`text-xs mt-1 text-right ${msg.sender == userInfo.id ? 'text-blue-200' : 'text-gray-400'
-                                  }`}>
+                                <div className={`text-xs mt-1 text-right ${
+                                  msg.sender == userInfo.id 
+                                    ? 'text-blue-200' 
+                                    : highContrastMode
+                                      ? 'text-gray-300' 
+                                      : 'text-gray-400'
+                                }`}>
                                   {formatMessageDate(msg.timestamp)}
                                 </div>
                               </div>

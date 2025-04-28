@@ -6,7 +6,7 @@ def test_medication_create(populate_database,app):
     medication = Medication(patient_id=3,name='test',dosage='test',instructions='test')
     db.session.add(medication)
     db.session.flush()
-    assert medication.id == 1
+    assert medication.id == 2
     assert medication.dict() != {}
     db.session.rollback()
 

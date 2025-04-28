@@ -9,19 +9,15 @@ devices = Blueprint('devices', __name__, url_prefix='/devices')
 
 # Get all devices
 @devices.route('/', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def get_devices():
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   devices = db.session.execute(db.select(Device)).scalars()
   return jsonify([device.dict() for device in devices])
 
 # Get device by id
 @devices.route('/<int:id>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def get_device(id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   device = db.session.get(Device, id)
   if device:
     return jsonify(device.dict())
@@ -29,10 +25,8 @@ def get_device(id):
 
 # Create a new device
 @devices.route('/', methods=['POST'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def create_device():
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   # Create an unassigned device
   device = Device()
   db.session.add(device)
@@ -41,10 +35,8 @@ def create_device():
 
 # Assign device to a patient
 @devices.route('/<int:id>/assign', methods=['PUT'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def assign_device(id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   device = db.session.get(Device, id)
   if not device:
     return jsonify({'error': 'Device does not exist'}), 422
@@ -59,7 +51,7 @@ def assign_device(id):
   
   # If patient_id is None, we're just unassigning the device
   if patient_id is None:
-    db.patient_id = None
+    device.patient_id = None
     db.session.commit()
     return jsonify(device.dict())
   
@@ -79,10 +71,8 @@ def assign_device(id):
 
 # Delete device
 @devices.route('/<int:id>', methods=['DELETE'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def delete_device(id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   device = db.session.get(Device, id)
   if not device:
     return jsonify({'error': 'Device does not exist'}), 422
@@ -93,21 +83,17 @@ def delete_device(id):
 
 # Get device for a patient
 @devices.route('/patient/<int:patient_id>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def get_patient_device(patient_id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
-  assignment = db.session.query(Device).filter_by(patient_id=patient_id).one()
+  assignment = db.session.query(Device).filter_by(patient_id=patient_id).first()
   if assignment:
     return jsonify(assignment.dict())
   return jsonify({'error': 'No device assigned to this patient'}), 404
 
 # Get all unassigned devices
 @devices.route('/unassigned', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def get_unassigned_devices():
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   # Get devices that don't have a patient assignment
   unassigned_devices = []
   devices = db.session.query(Device).filter_by(patient_id = None).all()

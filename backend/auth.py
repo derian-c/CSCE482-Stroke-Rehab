@@ -49,61 +49,70 @@ def get_token_auth_header():
     token = parts[1]
     return token
 
-def requires_auth(f):
-    """Determines if the Access Token is valid
-    """
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = get_token_auth_header()
-        jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
-        jwks = json.loads(jsonurl.read())
-        try:
-            unverified_header = jwt.get_unverified_header(token)
-        except exceptions.JWTError:
-            raise AuthError({
-                "code": "invalid_token",
-                "description": "Error decoding token headers. The token may be malformed or missing parts."
-            }, 401)
-
-        rsa_key = {}
-        for key in jwks["keys"]:
-            if key["kid"] == unverified_header["kid"]:
-                rsa_key = {
-                    "kty": key["kty"],
-                    "kid": key["kid"],
-                    "use": key["use"],
-                    "n": key["n"],
-                    "e": key["e"]
-                }
-        if rsa_key:
+def requires_auth(allowed_roles=[]):
+    def requires_auth_decorator(f):
+        """Determines if the Access Token is valid
+        """
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            token = get_token_auth_header()
+            jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+            jwks = json.loads(jsonurl.read())
             try:
-                payload = jwt.decode(
-                    token,
-                    rsa_key,
-                    algorithms=ALGORITHMS,
-                    audience=API_AUDIENCE,
-                    issuer="https://"+AUTH0_DOMAIN+"/"
-                )
-            except exceptions.ExpiredSignatureError:
-                raise AuthError({"code": "token_expired",
-                                "description": "token is expired"}, 401)
-            except exceptions.JWTClaimsError:
-                raise AuthError({"code": "invalid_claims",
-                                "description":
-                                    "incorrect claims,"
-                                    "please check the audience and issuer"}, 401)
-            except Exception:
-                raise AuthError({"code": "invalid_header",
-                                "description":
-                                    "Unable to parse authentication"
-                                    " token."}, 401)
-            
-            g.current_user_roles = payload.get('https://yourapp.com/roles')
-            g.token_payload = payload
-            
-            return f(*args, **kwargs)
-        raise AuthError({"code": "invalid_header",
-                        "description": "Unable to find appropriate key"}, 401)
-    return decorated
+                unverified_header = jwt.get_unverified_header(token)
+            except exceptions.JWTError:
+                raise AuthError({
+                    "code": "invalid_token",
+                    "description": "Error decoding token headers. The token may be malformed or missing parts."
+                }, 401)
+
+            rsa_key = {}
+            for key in jwks["keys"]:
+                if key["kid"] == unverified_header["kid"]:
+                    rsa_key = {
+                        "kty": key["kty"],
+                        "kid": key["kid"],
+                        "use": key["use"],
+                        "n": key["n"],
+                        "e": key["e"]
+                    }
+            if rsa_key:
+                try:
+                    payload = jwt.decode(
+                        token,
+                        rsa_key,
+                        algorithms=ALGORITHMS,
+                        audience=API_AUDIENCE,
+                        issuer="https://"+AUTH0_DOMAIN+"/"
+                    )
+                except exceptions.ExpiredSignatureError:
+                    raise AuthError({"code": "token_expired",
+                                    "description": "token is expired"}, 401)
+                except exceptions.JWTClaimsError:
+                    raise AuthError({"code": "invalid_claims",
+                                    "description":
+                                        "incorrect claims,"
+                                        "please check the audience and issuer"}, 401)
+                except Exception:
+                    raise AuthError({"code": "invalid_header",
+                                    "description":
+                                        "Unable to parse authentication"
+                                        " token."}, 401)
+                
+                g.current_user_roles = payload.get('https://yourapp.com/roles')
+                g.token_payload = payload
+                # Check if the user has any of the allowed roles
+                if allowed_roles != [] and not any(role in g.current_user_roles for role in allowed_roles):
+                    raise AuthError({
+                        "code": "unauthorized",
+                        "description": "You do not have the required permissions."
+                    }, 401)
+                
+                return f(*args, **kwargs)
+            raise AuthError({"code": "invalid_header",
+                            "description": "Unable to find appropriate key"}, 401)
+        return decorated
+    return requires_auth_decorator
+
 
 

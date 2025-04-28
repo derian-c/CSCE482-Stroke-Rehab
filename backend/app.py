@@ -74,16 +74,14 @@ def handle_auth_error(ex):
 
 # This needs authentication
 @app.route("/api/private")
-@requires_auth
+@requires_auth(allowed_roles=[])
 def private():
   response = "Hello from a private endpoint! You need to be authenticated to see this."
   return jsonify(message=response)
 
 @app.route('/sas_token/<string:container_name>',methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_sas_token(container_name):
-  if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   sas_token = generate_container_sas(
     account_name='capstorage2025',
     container_name=container_name,

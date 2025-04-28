@@ -45,6 +45,5 @@ def test_missing_payload(client,access_token):
 
 def test_valid_headers(client,access_token):
   response = client.get('/api/private',headers={'Authorization': 'Bearer '+access_token})
-  print(response.json)
   assert response.status_code == 200
   assert response.json == {'message': 'Hello from a private endpoint! You need to be authenticated to see this.'}

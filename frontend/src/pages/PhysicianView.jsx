@@ -123,9 +123,11 @@ const PhysicianView = ({userInfo}) => {
     if (selectedPatient != null) {
       socket.emit('leave', { patient_id: selectedPatient.id, physician_id: userInfo.id })
     }
-    setSelectedPatient(patient);
-    setPatientPresent(true)
+    if(!patient.motionFiles)
+      patient.motionFiles = [];
     socket.emit('join', { patient_id: patient.id, physician_id: userInfo.id })
+    setSelectedPatient(patient);
+    setPatientPresent(true);
     setShowDetail(true);
 
     // On mobile, collapse sidebar when patient is selected
@@ -211,12 +213,15 @@ const PhysicianView = ({userInfo}) => {
     }
 
     function onNewMotionFileEvent(data) {
-      setSelectedPatient((oldPatient) => {
-        return {
-          ...oldPatient, 
-          motionFiles: [...(oldPatient.motionFiles || []), data.motion_file]
-        };
-      });
+      setPatients(patients => {
+        const updatedPatients = patients.map(p => {
+          if (p.id == data.motion_file.patient_id) {
+            return { ...p, motionFiles: [...(p.motionFiles || []), data.motion_file] }
+          }
+          return p
+        })
+        return updatedPatients
+      })
 
       if (data.motion_readings && data.motion_readings.length > 0) {
         setMotionReadings(prevReadings => {
@@ -227,6 +232,12 @@ const PhysicianView = ({userInfo}) => {
       }
 
       showNotification(`New motion file uploaded: ${data.motion_file.name}`, "info");
+      setSelectedPatient((oldPatient) => {
+        return {
+          ...oldPatient, 
+          motionFiles: [...(oldPatient.motionFiles || []), data.motion_file]
+        };
+      });
     }
     
     socket.on('message', onMessageEvent)
@@ -419,6 +430,9 @@ const PhysicianView = ({userInfo}) => {
 
   useEffect(() => {
     async function loadPatients() {
+      if(patientPresent){
+        return;
+      }
       const token = await getAccessTokenSilently()
       for (let i = 0; i < userInfo.patients.length; i++) {
         
@@ -448,18 +462,29 @@ const PhysicianView = ({userInfo}) => {
     }
 
     loadPatients();
-  }, [activeTab, selectedPatient]);
+  }, [activeTab, selectedPatient, patientPresent]);
 
   useEffect(() => {
     async function fetchPatientMotionFiles() {
       if (!patientPresent) return;
-
       try {
         const token = await getAccessTokenSilently();
         const response = await getMotionFiles(selectedPatient.id, token);
         if (response.ok) {
           const files = await response.json();
-          setSelectedPatient((oldPatient) => {return {...oldPatient, motionFiles: files}})
+          setSelectedPatient((oldPatient) => {
+            return {...oldPatient, motionFiles: files};
+          })
+          setPatients((oldPatients) => {
+            const updatedPatients = oldPatients.map((p) => {
+              if (p.id === selectedPatient.id) {
+                p = {...p, motionFiles: files};
+                return p;
+              }
+              return p;
+            });
+            return updatedPatients;
+          });
         } else {
           console.error("Failed to fetch motion files");
           setSelectedMotionFile(null);
@@ -471,7 +496,7 @@ const PhysicianView = ({userInfo}) => {
     }
 
     fetchPatientMotionFiles();
-  }, [patientPresent]);
+  }, [patientPresent,selectedPatient?.id]);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-gray-100 overflow-hidden">
@@ -729,12 +754,12 @@ const PhysicianView = ({userInfo}) => {
                         />
                       )}
                       
-                      {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
+                      {/* {(!selectedPatient.motionFiles || selectedPatient.motionFiles.length === 0) && (
                         <div className="text-center py-8 text-gray-500">
                           <FileText className="h-10 w-10 mx-auto text-gray-300 mb-2" />
                           <p>No motion files available</p>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </>

@@ -10,19 +10,15 @@ physicians = Blueprint('physicians', __name__, url_prefix='/physicians')
 
 # Get list of all physicians
 @physicians.route('/', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def get_physicians():
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   physicians = db.session.scalars(db.select(User).filter_by(is_physician=True))
   return jsonify([physician.dict() for physician in physicians])
 
 # Get info for one physician by id
 @physicians.route('/<int:id>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Physician', 'Admin'])
 def get_physician(id):
-  if 'Admin' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   # Physician must exist
   if physician and physician.is_physician:
@@ -31,10 +27,8 @@ def get_physician(id):
 
 # Update info for one physician by id
 @physicians.route('/<int:id>', methods=['PUT'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def update_physician(id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   # Physician must exist
   if physician and physician.is_physician:
@@ -48,10 +42,8 @@ def update_physician(id):
 
 # Create a physician with a name and email address
 @physicians.route('/', methods=['POST'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def create_physician():
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   data = request.get_json()
   first_name = data.get('first_name')
   last_name = data.get('last_name')
@@ -93,10 +85,8 @@ def create_physician():
 
 # Delete physician by id
 @physicians.route('/<int:id>', methods=['DELETE'])
-@requires_auth
+@requires_auth(allowed_roles=['Admin'])
 def delete_physician(id):
-  if 'Admin' not in g.current_user_roles:
-    return jsonify({'error': 'Not authorized'}), 401
   physician = db.session.get(User, id)
   if physician and physician.is_physician:
     delete_auth0_user(physician.email_address)

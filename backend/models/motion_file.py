@@ -17,7 +17,8 @@ class Motion_File(Base):
   createdAt = Column(DateTime(timezone=True), server_default=func.now())
    
   patient_id = Column(Integer, ForeignKey('users.id'))
-  patient = relationship("User", back_populates="motion_file")
+  patient = relationship("User", back_populates="motion_files")
+  motion_readings: Mapped['MotionReading'] = relationship(cascade='all, delete', back_populates='motion_file')
   
   def __repr__(self) -> str:
     return f'Device({self.dict()})'

@@ -14,19 +14,15 @@ patient_documents = Blueprint('patient_documents', __name__, url_prefix='/patien
 
 # Get all patient documents
 @patient_documents.route('/', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_patient_documents():
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     documents = db.session.execute(db.select(PatientDocument)).scalars()
     return jsonify([document.dict() for document in documents])
 
 # Get patient document by id
 @patient_documents.route('/<int:id>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_patient_document(id):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     document = db.session.get(PatientDocument, id)
     if document:
         return jsonify(document.dict())
@@ -34,10 +30,8 @@ def get_patient_document(id):
 
 # Create a new patient document
 @patient_documents.route('/create', methods=['POST'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def create_patient_document():
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     request_data = request.get_json()
 
     if not request_data or 'type' not in request_data or 'url' not in request_data or 'name' not in request_data or 'patient_id' not in request_data:
@@ -54,7 +48,7 @@ def create_patient_document():
             document_type = DocumentType.LAB_RESULT
         else:
             return jsonify({'error': f'Invalid document type: {doc_type}. Must be one of: medical_history, exercise_record, lab_result'}), 400
-    except (KeyError, ValueError):
+    except AttributeError:
         return jsonify({'error': 'Invalid document type'}), 400
 
     # Validate patient exists
@@ -76,10 +70,8 @@ def create_patient_document():
 
 # Update a patient document
 @patient_documents.route('/<int:id>', methods=['PUT'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def update_patient_document(id):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     document = db.session.get(PatientDocument, id)
     if not document:
         return jsonify({'error': 'Patient document does not exist'}), 404
@@ -106,7 +98,7 @@ def update_patient_document(id):
                 document.type = DocumentType.LAB_RESULT
             else:
                 return jsonify({'error': f'Invalid document type: {doc_type}. Must be one of: medical_history, exercise_record, lab_result'}), 400
-        except (KeyError, ValueError):
+        except AttributeError:
             return jsonify({'error': 'Invalid document type'}), 400
 
     db.session.commit()
@@ -114,10 +106,8 @@ def update_patient_document(id):
 
 # Delete patient document
 @patient_documents.route('/<int:id>', methods=['DELETE'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def delete_patient_document(id):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     document = db.session.get(PatientDocument, id)
     if not document:
         return jsonify({'error': 'Patient document does not exist'}), 404
@@ -136,10 +126,8 @@ def delete_patient_document(id):
 
 # Get all documents for a patient
 @patient_documents.route('/patient/<int:patient_id>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_patient_documents_for_patient(patient_id):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     documents = db.session.query(PatientDocument).filter_by(patient_id=patient_id).all()
     if documents:
         return jsonify([document.dict() for document in documents])
@@ -147,36 +135,29 @@ def get_patient_documents_for_patient(patient_id):
 
 # Get patient documents by type
 @patient_documents.route('/patient/<int:patient_id>/type/<string:doc_type>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_patient_documents_by_type(patient_id, doc_type):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
-    try:
-        # Convert string type to enum
-        if doc_type.lower() == 'medical_history':
-            document_type = DocumentType.MEDICAL_HISTORY
-        elif doc_type.lower() == 'exercise_record':
-            document_type = DocumentType.EXERCISE_RECORD
-        elif doc_type.lower() == 'lab_result':
-            document_type = DocumentType.LAB_RESULT
-        else:
-            return jsonify({'error': f'Invalid document type: {doc_type}. Must be one of: medical_history, exercise_record, lab_result'}), 400
-        
-        documents = db.session.query(PatientDocument).filter_by(
-            patient_id=patient_id, 
-            type=document_type
-        ).all()
-        
-        return jsonify([document.dict() for document in documents]), 200
-    except Exception as e:
-        return jsonify({'error': f'Error retrieving documents: {str(e)}'}), 500
+    # Convert string type to enum
+    if doc_type.lower() == 'medical_history':
+        document_type = DocumentType.MEDICAL_HISTORY
+    elif doc_type.lower() == 'exercise_record':
+        document_type = DocumentType.EXERCISE_RECORD
+    elif doc_type.lower() == 'lab_result':
+        document_type = DocumentType.LAB_RESULT
+    else:
+        return jsonify({'error': f'Invalid document type: {doc_type}. Must be one of: medical_history, exercise_record, lab_result'}), 400
+    
+    documents = db.session.query(PatientDocument).filter_by(
+        patient_id=patient_id, 
+        type=document_type
+    ).all()
+    
+    return jsonify([document.dict() for document in documents]), 200
 
 # Get patient documents after a specific date
 @patient_documents.route('/patient/<int:patient_id>/after/<string:date>', methods=['GET'])
-@requires_auth
+@requires_auth(allowed_roles=['Patient', 'Physician'])
 def get_patient_documents_after_date(patient_id, date):
-    if 'Patient' not in g.current_user_roles and 'Physician' not in g.current_user_roles:
-      return jsonify({'error': 'Not authorized'}), 401
     try:
         target_date = datetime.strptime(date, '%Y-%m-%d')
         documents = db.session.query(PatientDocument).filter(
@@ -187,5 +168,3 @@ def get_patient_documents_after_date(patient_id, date):
         return jsonify([document.dict() for document in documents]), 200
     except ValueError:
         return jsonify({'error': 'Invalid date format. Please use YYYY-MM-DD'}), 400
-    except Exception as e:
-        return jsonify({'error': f'Error retrieving documents: {str(e)}'}), 500

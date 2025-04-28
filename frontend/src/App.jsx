@@ -11,9 +11,9 @@ import ProviderView from './pages/ProviderView'
 import MedicalHistoryPage from './pages/MedicalHistoryPage'
 import ExerciseRecordsPage from './pages/ExerciseRecordsPage'
 import LabResultsPage from './pages/LabResultsPage'
-import LoadingScreen from '@/components/LoadingScreen'
-import { useSocket } from '@/components/SocketProvider'
-import { getUsersRole } from '@/apis/getUserRole'
+import LoadingScreen from './components/LoadingScreen'
+import { useSocket } from './components/SocketProvider'
+import { getUsersRole } from './apis/getUserRole'
 import { getRouteByRole } from './utils/roleNavigation'
 
 // Import accessibility styles

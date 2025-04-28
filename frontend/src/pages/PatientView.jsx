@@ -16,16 +16,16 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { getMessages } from '@/apis/messagesService';
-import { useSocket } from '@/components/SocketProvider';
+import { getMessages } from '../apis/messagesService';
+import { useSocket } from '../components/SocketProvider';
 import AccessibilityMenu from '../components/AccessibilityMenu';
 import MedicalRecords from '../components/MedicalRecords';
 import Medications from '../components/Medications';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
-import PatientModel from "@/graphics/render";
-import { getMotionFiles } from "@/apis/motionFileService";
-import { getSasToken } from '@/apis/sasTokenService';
+import PatientModel from "../graphics/render";
+import { getMotionFiles } from "../apis/motionFileService";
+import { getSasToken } from '../apis/sasTokenService';
 
 const PatientView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -424,7 +424,7 @@ const PatientView = ({userInfo}) => {
                   <div className="mb-4 flex items-center">
                     <Activity className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                     <h2 className="text-xl font-semibold text-gray-900">
-                      Patient Model
+                      Recent Motion Capture
                     </h2>
                   </div>
                   <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">

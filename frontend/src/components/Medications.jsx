@@ -11,7 +11,7 @@ import {
   createMedication, 
   logMedicationIntake, 
   deleteMedication 
-} from "@/apis/medicationService";
+} from "../apis/medicationService";
 import { useAuth0 } from "@auth0/auth0-react";
 
 const Medications = ({ patientId, showNotification, showConfirmation }) => {

@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '@/constants.js'
+import { BACKEND_URL } from '../constants.js'
 import { useAuth0 } from '@auth0/auth0-react'
 
 export async function getPhysicians(token){

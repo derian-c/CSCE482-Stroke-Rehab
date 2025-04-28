@@ -41,6 +41,7 @@ pip install -r requirements.txt
 ```bash
 docker pull enigmap2/strokerehab
 ```
+Command Override for running image in Azure: ["/bin/bash", "-c", "cd /root/flashApp; ./start.sh"]
 
 ### Frontend
 1. **Open a new terminal (or a new tab) and navigate to the frontend directory:**

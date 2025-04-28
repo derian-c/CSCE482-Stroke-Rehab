@@ -187,8 +187,8 @@ const PhysicianView = ({userInfo}) => {
       setPatients(patients => {
         const updatedPatients = patients.map(p => {
           if (p.id == patient.id) {
-            setSelectedPatient(() => { return { ...p, messages: [...(p.messages), data] } })
-            return { ...p, messages: [...(p.messages), data] }
+            setSelectedPatient(() => { return { ...patient, messages: [...(p.messages), data] } })
+            return { ...patient, messages: [...(p.messages), data] }
           }
           return p
         })

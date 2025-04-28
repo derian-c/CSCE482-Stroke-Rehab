@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Smartphone, User, Plus, Trash, RefreshCw, Unlink, Link } from 'lucide-react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { BACKEND_URL } from '@/constants.js';
+import { BACKEND_URL } from '../constants.js';
 
 // API service functions with auth token
 const getDevices = async (token) => {

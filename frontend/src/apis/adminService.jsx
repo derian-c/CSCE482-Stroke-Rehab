@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '@/constants.js'
+import { BACKEND_URL } from '../constants.js'
 
 export async function getAdmins(token){
   return fetch(`${BACKEND_URL}/admins`,{

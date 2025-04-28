@@ -89,4 +89,6 @@ def access_token():
     'client_id': AUTH0_CLIENT_ID,
     'audience': API_AUDIENCE
   }
-  return requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',data=data).json().get('access_token')
+  response = requests.post('https://'+AUTH0_DOMAIN+'/oauth/token',data=data)
+  print(response.text)
+  return response.json().get('access_token')

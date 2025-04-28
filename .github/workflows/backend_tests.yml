@@ -58,7 +58,7 @@ jobs:
       - name: Run tests with coverage
         working-directory: backend
         run: |
-          pytest --cov --cov-report=xml --cov-report=term
+          pytest --cov --cov-report=xml --cov-report=term -s
 
       # Upload coverage report as an artifact
       - name: Upload coverage report

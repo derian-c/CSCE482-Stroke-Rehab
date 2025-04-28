@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getPatients, createPatientByPhysician, deletePatientByID } from "@/apis/patientService";
-import PatientModel from "@/graphics/render";
+import { getPatients, createPatientByPhysician, deletePatientByID } from "../apis/patientService";
+import PatientModel from "../graphics/render";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   Users,
@@ -19,16 +19,16 @@ import {
   UserPlus,
   Trash2
 } from "lucide-react";
-import { useSocket } from '@/components/SocketProvider'
-import { getMessages } from '@/apis/messagesService'
+import { useSocket } from '../components/SocketProvider'
+import { getMessages } from '../apis/messagesService'
 import { getMotionFiles } from "../apis/motionFileService";
-import MotionReadingsTab from '@/components/MotionReadingsTab'
-import MotionFilesTab from '@/components/MotionFilesTab'
-import AccessibilityMenu from '@/components/AccessibilityMenu';
-import AddPatient from '@/components/AddPatient';
+import MotionReadingsTab from '../components/MotionReadingsTab'
+import MotionFilesTab from '../components/MotionFilesTab'
+import AccessibilityMenu from '../components/AccessibilityMenu';
+import AddPatient from '../components/AddPatient';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
-import { getSasToken } from '@/apis/sasTokenService'
+import { getSasToken } from '../apis/sasTokenService'
 
 const PhysicianView = ({userInfo}) => {
   const { user, logout, getAccessTokenSilently } = useAuth0();
@@ -549,7 +549,9 @@ const PhysicianView = ({userInfo}) => {
                 {user?.name?.charAt(0) || "Dr"}
               </div>
             )}
-            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">Dr. {userInfo.first_name + " " + userInfo.last_name || "Physician"}</span>
+            <span className="font-medium text-sm sm:text-base text-gray-700 mr-3">
+              {userInfo ? `Dr. ${userInfo.first_name} ${userInfo.last_name}` : "Physician"}
+            </span>
             <button
               onClick={() => logout({ returnTo: window.location.origin })}
               className="text-gray-500 hover:text-red-600 transition-colors"

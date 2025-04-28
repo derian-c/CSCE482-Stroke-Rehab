@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/47</span>
+                <span class='fraction'>0/52</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/47</span>
+                <span class='fraction'>0/52</span>
             </div>
         
             
@@ -115,24 +115,12 @@
 <a name='L50'></a><a href='#L50'>50</a>
 <a name='L51'></a><a href='#L51'>51</a>
 <a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -144,9 +132,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -167,56 +153,85 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { BACKEND_URL } from '@/constants.js'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { BACKEND_URL } from '../constants.js'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cstat-no" title="statement not covered" >import { useAuth0 } from '@auth0/auth0-react'</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export async function getPhysicians(){</span>
+<span class="cstat-no" title="statement not covered" >export async function getPhysicians(token){</span>
 <span class="cstat-no" title="statement not covered" >  return fetch(`${BACKEND_URL}/physicians`,{</span>
 <span class="cstat-no" title="statement not covered" >    method: 'GET',</span>
 <span class="cstat-no" title="statement not covered" >    headers: {</span>
-<span class="cstat-no" title="statement not covered" >      'Accept': 'application/json'</span>
+<span class="cstat-no" title="statement not covered" >      'Accept': 'application/json',</span>
+<span class="cstat-no" title="statement not covered" >      'Authorization': 'Bearer '+token</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export async function getPhysicianByID(id){</span>
+<span class="cstat-no" title="statement not covered" >export async function getPhysicianByID(id, token){</span>
 <span class="cstat-no" title="statement not covered" >  return fetch(`${BACKEND_URL}/physicians/${id}`,{</span>
 <span class="cstat-no" title="statement not covered" >    method: 'GET',</span>
 <span class="cstat-no" title="statement not covered" >    headers: {</span>
-<span class="cstat-no" title="statement not covered" >      'Accept': 'application/json'</span>
+<span class="cstat-no" title="statement not covered" >      'Accept': 'application/json',</span>
+<span class="cstat-no" title="statement not covered" >      'Authorization': 'Bearer '+token</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export async function createPhysician(physicianData){</span>
+<span class="cstat-no" title="statement not covered" >export async function createPhysician(physicianData, token){</span>
 <span class="cstat-no" title="statement not covered" >  return fetch(`${BACKEND_URL}/physicians`,{</span>
 <span class="cstat-no" title="statement not covered" >    method: 'POST',</span>
 <span class="cstat-no" title="statement not covered" >    headers: {</span>
 <span class="cstat-no" title="statement not covered" >      'Accept': 'application/json',</span>
-<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json'</span>
+<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json',</span>
+<span class="cstat-no" title="statement not covered" >      'Authorization': 'Bearer '+token</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    body: JSON.stringify(physicianData)</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export async function updatePhysicianByID(id, physicianData){</span>
+<span class="cstat-no" title="statement not covered" >export async function updatePhysicianByID(id, physicianData, token){</span>
 <span class="cstat-no" title="statement not covered" >  return fetch(`${BACKEND_URL}/physicians/${id}`,{</span>
 <span class="cstat-no" title="statement not covered" >    method: 'PUT',</span>
 <span class="cstat-no" title="statement not covered" >    headers: {</span>
 <span class="cstat-no" title="statement not covered" >      'Accept': 'application/json',</span>
-<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json'</span>
+<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json',</span>
+<span class="cstat-no" title="statement not covered" >      'Authorization': 'Bearer '+token</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    body: JSON.stringify(physicianData)</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export async function deletePhysicianByID(id){</span>
+<span class="cstat-no" title="statement not covered" >export async function deletePhysicianByID(id, token){</span>
 <span class="cstat-no" title="statement not covered" >  return fetch(`${BACKEND_URL}/physicians/${id}`,{</span>
 <span class="cstat-no" title="statement not covered" >    method: 'DELETE',</span>
 <span class="cstat-no" title="statement not covered" >    headers: {</span>
 <span class="cstat-no" title="statement not covered" >      'Accept': 'application/json',</span>
-<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json'</span>
-<span class="cstat-no" title="statement not covered" >    },</span>
-<span class="cstat-no" title="statement not covered" >    body: JSON.stringify(physicianData)</span>
+<span class="cstat-no" title="statement not covered" >      'Content-Type': 'application/json',</span>
+<span class="cstat-no" title="statement not covered" >      'Authorization': 'Bearer '+token</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -226,7 +241,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-24T21:56:04.450Z
+                at 2025-04-28T14:59:25.813Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

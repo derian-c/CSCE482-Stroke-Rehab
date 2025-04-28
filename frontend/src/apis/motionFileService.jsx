@@ -1,5 +1,5 @@
 // API service for motion files
-import { BACKEND_URL } from '@/constants.js'
+import { BACKEND_URL } from '../constants.js'
 
 export const getMotionFiles = async (patientId, token) => {
   console.log(`${BACKEND_URL}/motion_files/patient/${patientId}`)

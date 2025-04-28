@@ -3,11 +3,11 @@ import { isAdmin } from "../apis/isAdmin";
 import { getUsersRole } from "../apis/getUserRole";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
-import { getPhysicians, createPhysician, deletePhysicianByID } from '@/apis/physicianService'
-import { getAdmins } from '@/apis/adminService'
+import { getPhysicians, createPhysician, deletePhysicianByID } from '../apis/physicianService'
+import { getAdmins } from '../apis/adminService'
 import useFetchProtectedData from "../utils/fetchFromApi";
 import { DeviceManagement } from "../components/DeviceManagement";
-import AccessibilityMenu from '@/components/AccessibilityMenu';
+import AccessibilityMenu from '../components/AccessibilityMenu';
 import NotificationToast from "../components/NotificationToast";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
@@ -347,7 +347,7 @@ function AdminView({userInfo}) {
                     <input
                       type="text"
                       id="firstName"
-                      placeholder="John"
+                      placeholder="e.g. John"
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={inviteFirstName}
                       onChange={(e) => setInviteFirstName(e.target.value)}
@@ -365,7 +365,7 @@ function AdminView({userInfo}) {
                     <input
                       type="text"
                       id="lastName"
-                      placeholder="Doe"
+                      placeholder="e.g. Doe"
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={inviteLastName}
                       onChange={(e) => setInviteLastName(e.target.value)}
@@ -383,7 +383,7 @@ function AdminView({userInfo}) {
                     <input
                       type="email"
                       id="email"
-                      placeholder="physician@example.com"
+                      placeholder="e.g. physician@example.com"
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}

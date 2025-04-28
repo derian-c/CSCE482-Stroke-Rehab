@@ -36,7 +36,7 @@ class User(Base):
   
   patient_chat: Mapped['Chat'] = relationship(primaryjoin='User.id==Chat.patient_id',cascade='all, delete')
 
-  motion_file = relationship("Motion_File", back_populates='patient')
+  motion_files: Mapped[List['Motion_File']] = relationship(back_populates='patient', cascade='all, delete')
 
   device: Mapped['Device'] = relationship(back_populates='patient')
 

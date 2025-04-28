@@ -10,8 +10,9 @@ from models.chat_message import ChatMessage
 from models.device import Device
 from models.patient_physician import PatientPhysician
 from models.motion_file import Motion_File
-from models.patient_document import PatientDocument
+from models.patient_document import PatientDocument, DocumentType
 from models.medication import Medication
+from models.motion_reading import MotionReading
 
 @pytest.fixture(scope='module')
 def app():
@@ -42,17 +43,35 @@ def populate_database(app):
     db.session.commit()
     chat = Chat(patient_id=3,physician_id=1)
     db.session.add(chat)
+    db.session.commit()
     chat_message = ChatMessage(chat_id=1,sender=1,content='content')
     db.session.add(chat_message)
+    device1 = Device(patient_id=3)
+    db.session.add(device1)
+    device2 = Device()
+    db.session.add(device2)
+    medication = Medication(name='Test Medication', dosage='50mg', instructions='Once a day', patient_id=3)
+    db.session.add(medication)
+    motion_file = Motion_File(patient_id=3, url='testurl', name='testname', type='testtype')
+    db.session.add(motion_file)
+    db.session.commit()
+    motion_reading = MotionReading(motion_file_id=1, name='testreading', min=0.0, max=1.0)
+    db.session.add(motion_reading)
+    patient_document = PatientDocument(patient_id=3, url='testurl', name='testname', type=DocumentType.MEDICAL_HISTORY)
+    db.session.add(patient_document)
     db.session.commit()
   yield
   with app.app_context():
+    db.session.query(MotionReading).delete()
+    db.session.query(Motion_File).delete()
+    db.session.query(PatientDocument).delete()
+    db.session.query(Medication).delete()
     db.session.query(Device).delete()
     db.session.query(ChatMessage).delete()
     db.session.query(Chat).delete()
     db.session.query(PatientPhysician).delete()
     db.session.query(User).delete()
-    db.session.execute(db.text('TRUNCATE TABLE users,chats,chat_messages,devices,patient_physicians,motion_files,patient_documents,medications RESTART IDENTITY;'))
+    db.session.execute(db.text('TRUNCATE TABLE users,chats,chat_messages,devices,patient_physicians,motion_files,patient_documents,medications,motion_readings RESTART IDENTITY;'))
     db.session.commit()
 
 @pytest.fixture(scope='session')

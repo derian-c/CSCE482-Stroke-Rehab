@@ -6,7 +6,7 @@ import os
 import requests
 
 @socket.on('connect')
-@requires_auth
+@requires_auth(allowed_roles=[])
 def on_connect():
   AUTH0_MANAGEMENT_ID = os.environ.get('AUTH0_MANAGEMENT_ID')
   AUTH0_MANAGEMENT_SECRET = os.environ.get('AUTH0_MANAGEMENT_SECRET')
